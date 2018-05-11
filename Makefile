@@ -4,10 +4,10 @@
 # Date 11.05.2018
 
 # Define the required macros
-CFLAGS = -Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-common -ftrapv -O3 -g -std=gnu11
-CC = gcc52
-SEND=sender_test.o
-REC=receiver_test.o
+CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-common -ftrapv -O3 -g -std=gnu11
+CC=gcc
+SEND=sender_test
+REC=receiver_test
 
 DOXYGEN=doxygen
 CD=cd
@@ -16,15 +16,17 @@ RM=rm
 GREP=grep
 EXCLUDE_PATTERN=footrulewidth
 # add the linking libraries from Semaphores
-LIB1=libpthread.a
-LIB2=librt.a
-# TODO: add the linking libraries s and shared library
+LIB_THREAT=pthread
+LIB_RUNTIME=rt
+
 
 %.c: %o
 	$(CC) $(CFLAGS) -c
 
 all: $(REC)
-	$(CC) $(CFLAGS) -c -l$(LIB1) -l$(LIB2)
+
+receivertest:
+	$(CC) $(CFLAGS) $(REC).o -o$(REC) -l$(LIB_THREAT) -l$(LIB_RUNTIME)
 
 
 .PHONY: clean
