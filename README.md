@@ -1,5 +1,5 @@
 # Shared-Memory
-Betriebssysteme Beispiel 3
+Operation Systems - Assignment 3
 
 ## Description:
 Write a C- program that broadcasts messages to a receiver using a shared memory. The shared memory should be implemented as a ring buffer of size N.
