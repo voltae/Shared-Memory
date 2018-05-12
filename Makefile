@@ -6,8 +6,9 @@
 # Define the required macros
 CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-common -ftrapv -O3 -g -std=gnu11
 CC=gcc
-SEND=sender_test
-REC=receiver_test
+LDLIBS = -lpthread -lrt
+
+OBJECTS=receiver_test.o common.o
 
 DOXYGEN=doxygen
 CD=cd
@@ -15,24 +16,19 @@ MV=mv
 RM=rm
 GREP=grep
 EXCLUDE_PATTERN=footrulewidth
-# add the linking libraries from Semaphores
-LIB_THREAT=pthread
-LIB_RUNTIME=rt
 
+%.o: %.c
+	$(CC) $(CFLAGS)  -c $<
 
-%.c: %o
-	$(CC) $(CFLAGS) -c
+all: receivertest
 
-all: $(REC)
-
-receivertest:
-	$(CC) $(CFLAGS) $(REC).o -o$(REC) -l$(LIB_THREAT) -l$(LIB_RUNTIME)
-
+receivertest: $(OBJECTS)
+	$(CC) $(CFLAGS) $(OBJECTS) common_resources.h -o$@ $(LDLIBS)
 
 .PHONY: clean
 
 clean:
-	rm -f *.o $(SEND) $(REC)
+	rm -f *.o
 
 .PHONY: distclean
 
