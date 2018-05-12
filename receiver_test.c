@@ -6,38 +6,53 @@
 #define ERROR (-1)
 
 /* Global constant semaphore read */
-sem_t *readSemaphore;
-sem_t *writeSemaphore;
+static sem_t *readSemaphore;
+//static sem_t *writeSemaphore;
+
+static char *szCommand = "<not yet set>";
 
 /* Global constant for shared memory */
                                 // file descriptor for the shared memory (is stored on disk "/dev/shm")
                           // the linked memory address in current address space
 
 /* Report Error and fre ressources */
-
+void print_usage(void)
+{
+    fprintf(stderr, "Usage: %s [-m] length\n", szCommand);
+    exit(EXIT_FAILURE);
+}
 int main (int argc, char **argv)
 {
+    /* store the progam name */
+    szCommand = argv[0];
+
     char  *sharedMemory;
     size_t buffersize = 0; // buffersize of memory
     int opt;    // option for getop
-    char **nonDigits = NULL;
+    //char **nonDigits = NULL;
+    long bufferTemp;
 
+    /* check if agruments are more 1 */
+    if (argc < 2)
+    {
+        print_usage();
+    }
     // check operants with getopt(3)
-    while ((opt = getopt(argc,argv,"m:")) != ERROR)  {
-        long bufferTemp;
+    while ((opt = getopt(argc,argv,"m:")) != -1)  {
         switch (opt)
         {
-            case 'm':
-                bufferTemp = strtol(optarg,nonDigits, 10);
-                if ((bufferTemp == ERROR) || *nonDigits != NULL)
+           case 'm':
+                bufferTemp = strtol(optarg,NULL, 10);
+                if ((bufferTemp == ERROR) || bufferTemp > 1)
                 {
                     /* error handing */
+                    print_usage();
                 }
                 buffersize = (size_t)bufferTemp;
                 break;
             default:
-                fprintf(stderr, "Usage: %s [-m] length\n", argv[0]);
-                exit(EXIT_FAILURE);
+                print_usage();
+                break;
         }
     }
 
