@@ -62,8 +62,9 @@ int main (int argc, char **argv)
       memorypointer[i++] = c;
       sem_post (sem_read);      // counts the reading places on up
     }
-  memorypointer[LENGTH - 1] = EOF;
+  memorypointer[i] = EOF;
 
+  fprintf (stdout, "Written EOF to memory on position: %d\n", i);
   /* the receiver has to remove all resources */
   if (munmap( memorypointer, LENGTH * sizeof (char)) == -1)
   {
