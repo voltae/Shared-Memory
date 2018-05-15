@@ -8,7 +8,9 @@ CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-commo
 CC=gcc
 LDLIBS = -lpthread -lrt
 
-OBJECTS=receiver_test.o common.o
+OBJECTS_RECEIVER=receiver_test.o common.o
+OBJECTS_SENDER=sender_test.o common.o
+HEADER=common.h
 
 DOXYGEN=doxygen
 CD=cd
@@ -20,11 +22,21 @@ EXCLUDE_PATTERN=footrulewidth
 %.o: %.c
 	$(CC) $(CFLAGS)  -c $<
 
-all: receivertest
+all: receivertest sendertest
 
-receivertest: $(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) common_resources.h -o$@ $(LDLIBS)
+receivertest: $(OBJECTS_RECEIVER)
+	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) $(HEADER) -o$@ $(LDLIBS)
 
+sendertest: $(OBJECTS_SENDER)
+	$(CC) $(CFLAGS) $(OBJECTS_SENDER) $(HEADER) -o$@ $(LDLIBS)
+
+
+testsimple: sender_simple receiver_simple
+
+sender_simple: sender_simple.c
+	$(CC) $< -o$@ $(LDLIBS)
+receiver_simple: receiver_simple.c
+	$(CC) $< -o$@ $(LDLIBS)
 .PHONY: clean
 
 clean:
