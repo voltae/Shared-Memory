@@ -17,8 +17,8 @@
 int main (int argc, char **argv)
 {
   /* counter */
-  int i = 0;
-  char c;
+  int r = 0;
+  signed char c;
 
   /* open a file descriptor with the given name of the shm */
   int shmfd = shm_open (SHM_NAME, O_RDONLY, 0);
@@ -49,14 +49,19 @@ int main (int argc, char **argv)
   while (1)
     {
       sem_wait (sem_read);    // counts the reading places one down
-      c = memorypointer[i++];
-      if (c != EOF)
+      c = memorypointer[r];
+      if (c == EOF)
+        {
+          fprintf (stderr, "EOF detected on %d %d\n", memorypointer[r], r);
+          break;}
+
+      else
         {
           fputc (c, stdout);
           sem_post (sem_write);   // counts the writing places one up
+          r = (r + 1) % LENGTH;
         }
-      else
-        break;
+
 
     }
 
@@ -66,7 +71,7 @@ int main (int argc, char **argv)
       printf ("Error in unmapping memory\n");
     }
 
-  /* close the filepointer from shared memeory */
+  /* close the filepointer from shared memory */
   if (close (shmfd) == -1)
     {
       printf ("error in closing shmfd\n");
@@ -96,4 +101,3 @@ int main (int argc, char **argv)
     }
   return 0;
 }
-
