@@ -18,8 +18,8 @@
 int main (int argc, char **argv)
 {
   /* counter */
-  int i = 0;
-  char c;
+  int w = 0;
+  signed char c;
 
   /* open a file descriptor with the given name of the shm */
   int shmfd = shm_open (SHM_NAME, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
@@ -59,12 +59,16 @@ int main (int argc, char **argv)
   while ((c = fgetc (stdin)) != EOF)
     {
       sem_wait (sem_write);     // counts the writing places on down
-      memorypointer[i++] = c;
+      memorypointer[w] = c;
       sem_post (sem_read);      // counts the reading places on up
+      w = (w + 1) % LENGTH;
     }
-  memorypointer[i] = EOF;
 
-  fprintf (stdout, "Written EOF to memory on position: %d\n", i);
+  /* Signalize the receiver that reading is not yet over EOF! has to be read */
+  memorypointer[w] = EOF;
+  sem_post (sem_read);
+
+  fprintf (stdout, "Written EOF: %d to memory on position: %d\n",memorypointer[w], w);
   /* the receiver has to remove all resources */
   if (munmap( memorypointer, LENGTH * sizeof (char)) == -1)
   {
