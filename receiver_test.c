@@ -2,20 +2,46 @@
 // Created by marcaurel on 11.05.18.
 //
 
-#include "common.h"
-#define ERROR (-1)
+#include <stdio.h>
+#include <stdlib.h>  // for EXIT_SUCCESS etc
+
+#include <semaphore.h>  // for semaphores
+#include <fcntl.h>      // For O_* constants
+#include <sys/stat.h>   // For mode constants
+#include <sys/mman.h>   // for shared memory
+#include <unistd.h>     // for ftruncate() truncation shared memory
+
+#include <errno.h>      // for errno global constant
+#include <string.h>     // for strerror
+#include <sys/sysctl.h> // for SHMMAX
+
+#define NAMELLENGTH 14
+
+typedef enum isError {ERROR = -1, SUCCESS} isError;
+
 
 /* Global constant semaphore read */
-//char semaphoreReadName[NAMELLENGTH];  // Semaphore read Name with own annuminas uid
-//char semaphoreWriteName[NAMELLENGTH];  // Semaphore write Name with own annuminas uid
-//char sharedMemoryName[NAMELLENGTH];     // Shared memory name
+static char semaphoreReadName[NAMELLENGTH];  // Semaphore read Name with own annuminas uid
+static char semaphoreWriteName[NAMELLENGTH];  // Semaphore write Name with own annuminas uid
+static char sharedMemoryName[NAMELLENGTH];     // Shared memory name
 
-static sem_t *readSemaphore_local = NULL;
-static sem_t *writeSemaphore_local = NULL;
-static char *sharedMemory_local = NULL;
+static void setRessourcesName(void);
+static void createSemaphores(void);
+static void createSharedMemory (size_t size);
 
-unsigned int r;
-unsigned int w;
+static void removeRessources(size_t size);
+static void BailOut(const char *message);
+
+/* references to the semaphores and the shared memory */
+static sem_t *readSemaphore = NULL;
+static sem_t *writeSemaphore = NULL;
+static char *sharedMemory = NULL;
+
+/* Number of read processes */
+static unsigned int r;
+
+/* file descriptor for the shared memory */
+static int fileDescr_sm;
 
 static char *szCommand = "<not yet set>";
 
@@ -24,154 +50,252 @@ static char *szCommand = "<not yet set>";
 // the linked memory address in current address space
 
 /* Report Error and free ressources */
-void print_usage(void)
+void print_usage (void)
 {
-    fprintf(stderr, "Usage: %s [-m] length\n", szCommand);
-    exit(EXIT_FAILURE);
+  fprintf (stderr, "USAGE: %s [-m] length\n", szCommand);
+  exit (EXIT_FAILURE);
+}
+
+/* Report Error and free ressources
+ * Since we are in the receiver process, we are responsable for removing all ressources, even in the error case
+ */
+void BailOut(const char *message)
+{
+  if (message != NULL)
+    {
+      fprintf(stderr, "%s: %s\n",szCommand, message);
+    }
+
+  /* TODO: set here a function call to remove all ressources */
 }
 int main (int argc, char **argv)
 {
-    /* store the progam name */
-    szCommand = argv[0];
+  /* store the progam name */
+  szCommand = argv[0];
 
-    size_t buffersize = 0; // buffersize of memory
-    int opt;    // option for getop
-    //char **nonDigits = NULL;
-    long bufferTemp;
+  size_t buffersize = 0; // buffersize of memory
+  int opt;    // option for getop
+  long bufferTemp;
+  char *stringInt = NULL;
 
-    /* check if agruments are more 1 */
-    if (argc < 2)
+  /* check if agruments are more 1 */
+  if (argc < 2)
     {
-        print_usage();
+      print_usage ();
     }
-    // check operants with getopt(3)
-    while ((opt = getopt(argc,argv,"m:")) != -1)  {
-        switch (opt)
-        {
-            case 'm':
-                bufferTemp = strtol(optarg,NULL, 10);
-                if ((bufferTemp == ERROR) || bufferTemp < 1)
-                {
-                    /* error handing */
-                    print_usage();
-                }
-                buffersize = (size_t)bufferTemp;
-                break;
-            default:
-                print_usage();
-                break;
-        }
-    }
-
-    if (strcmp(semaphoreReadName, "\0") == 0)
+  // check operants with getopt(3)
+  while ((opt = getopt (argc, argv, "m:")) != -1)
     {
-        setRessourcesName();
-    }
-
-    /* Initialize Semaphores TODO: change the initial number to a variable*/
-    if (readSemaphore_local == NULL)
-    { readSemaphore_local = sem_open(semaphoreReadName, 0); }
-
-    /* Initialize Semaphores TODO: change the initial number to a variable*/
-    if (writeSemaphore_local == NULL)
-    { writeSemaphore_local = sem_open(semaphoreWriteName, 0); }
-
-    // initialize the reader index
-    r = buffersize - 1;
-
-    // initialize the reading char for the shared memory
-    char readingChar;
-
-    // initialize shared memory
-    if (sharedMemory_local == NULL)
-    {
-        int shmfd = shm_open(sharedMemoryName, O_RDONLY, S_IRWXU);
-        if (shmfd == ERROR)
+      switch (opt)
         {
-            fprintf(stderr, "Error in creating shared memory, %s\n", strerror(errno));
-            BailOut("Could not create shared memory");
-        }
-
-        // fixing the shared memory to a define size (coming from the agrv)
-        if (ftruncate(shmfd, buffersize * sizeof(char)) == ERROR)
-        {
-            fprintf(stderr, "%s: Error in truncating shared memory: %lu, %s\n", szCommand, buffersize* sizeof(char), strerror(errno));
-            BailOut("Could not truncate shared memory");
-        }
-
-        /*blend the shared memory in current memory */
-        /* TODO: buffersize should be size of page */
-
-        /* blend the memory in READ ONLY */
-        sharedMemory_local = mmap(NULL, buffersize * sizeof(char), PROT_READ, MAP_SHARED, shmfd, 0);
-        if (sharedMemory_local == MAP_FAILED)
-        {
-            fprintf(stderr, "%s: Error in mapping memory, %s\n", szCommand, strerror(errno));
-            BailOut("Could not map the memory");
-        }
-
-    }
-
-    /* Semaphore wait process */
-
-    int retVal;
-    retVal = sem_wait(readSemaphore_local);
-    if (retVal == ERROR)
-    {
-        fprintf(stderr, "%s: Error in waiting semaphore, %s\n", szCommand, strerror(errno));
-        BailOut("Could not wait for Semaphore");
-    }
-
-    printf("Entering in the critical region\n");
-
-    while (1)
-    {
-        // write index is the same as the read index. writer must wait
-        if (((w + 1) % buffersize) == r)
-        {
-            int semaphoreWait;
-            semaphoreWait = sem_wait(writeSemaphore_local);
-            if (semaphoreWait == ERROR)
+          case 'm':
             {
-                fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
-                BailOut("Could not wait for Semaphore");
-            }
-        }
-
-        if (sharedMemory_local[r] == EOF)
-        {
-            exit(1);
-        }
-
-        // print out the char to stdout
-        readingChar = sharedMemory_local[r];
-        fputc(readingChar, stdout);
-
-                // increment the counter
-        r = (r + 1) % buffersize;
-
-        int sem_write;
-        // if the writer process is asleep, wake it up
-        sem_getvalue(writeSemaphore_local,&sem_write);
-        if (sem_write == 0)
-        {
-            int retval = sem_post(writeSemaphore_local);
-            {
-                if (retval == ERROR)
+              bufferTemp = strtol (optarg, &stringInt, 10);
+              if ((bufferTemp == ERROR) || stringInt != NULL)
                 {
-                    fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
-                    BailOut("Could not post for Semaphore");
+                  /* error handing */
+                  print_usage ();
                 }
+              buffersize = (size_t) bufferTemp;
+              break;
             }
+          default:
+            print_usage ();
+          break;
         }
     }
 
+  /* Set the ressource names */
+  setRessourcesName ();
 
-    /* unmap the memory */
-    closeSharedMemory(sharedMemory_local);
+  /* open the semaphores */
+  createSemaphores ();
 
-    /* Closes the semaphore */
-    closeSemaphores();
+  // initialize the reading char for the shared memory
+  char readingChar;
 
-    return EXIT_SUCCESS;
+  /* open the shared memory */
+  createSharedMemory (buffersize);
+  /* Semaphore wait process */
+
+  while (1)
+    {
+      // write index is the same as the read index. writer must wait
+      int semaphoreWait = sem_wait (readSemaphore);
+      if (semaphoreWait == ERROR)
+        {
+          fprintf (stderr, "Error in waiting semaphore, %s\n", strerror (errno));
+          BailOut ("Could not wait for Semaphore");
+        }
+      /* read a char from shared memory */
+      readingChar = sharedMemory[r];
+
+      /* is end of file detected? */
+      if (readingChar == EOF)
+        {
+          break;
+        }
+
+      // print out the char to stdout
+
+      fputc (readingChar, stdout);
+      int retval = sem_post (writeSemaphore);
+      // increment the counter
+      r = (r + 1) % buffersize;
+
+      if (retval == ERROR)
+        {
+          fprintf (stderr, "Error in posting semaphore, %s\n", strerror (errno));
+          BailOut ("Could not post for Semaphore");
+        }
+    }
+
+  /* unmap the memory */
+  removeRessources (buffersize);
+
+  return EXIT_SUCCESS;
+}
+
+static void setRessourcesName(void)
+{
+
+  int uid = getuid();  // These functions are always successful. man7
+
+  /* create read semaphore */
+  snprintf(semaphoreReadName, 13, "/sem_%d", 1000 * uid + 0);
+  snprintf(semaphoreWriteName, 13, "/sem_%d", 1000 * uid + 1);
+  snprintf(sharedMemoryName, 13, "/shm_%d", 1000 * uid+0);
+}
+
+static void createSemaphores(void)
+{
+  if (readSemaphore != NULL)
+    {
+      return;
+    }
+
+  /* Open an existing read semaphore from file*/
+  readSemaphore = sem_open(semaphoreReadName, O_RDONLY, 0);
+  if (readSemaphore == SEM_FAILED)
+    {
+      /* Error message */
+      fprintf(stderr, "Error in creating semaphore, %s\n", strerror(errno));
+      BailOut("Could not create Semaphore");
+    }
+
+  if (writeSemaphore != NULL)
+    {
+      return;
+    }
+
+  /* open an existing write semaphore from file*/
+  writeSemaphore = sem_open(semaphoreWriteName, O_RDONLY, 0);
+  if (writeSemaphore == SEM_FAILED)
+    {
+      /* Error message */
+      fprintf(stderr, "Error in creating semaphore, %s\n", strerror(errno));
+      BailOut("Could not create Semaphore");
+    }
+}
+
+/* Open an existing shared memory, it should exist, because the sender has to set up */
+static void createSharedMemory (size_t size)
+{
+
+  if (sharedMemory != NULL)
+    {
+      return;
+    }
+
+  if (strcmp(sharedMemoryName, "\0") == 0)
+    {
+      setRessourcesName();
+    }
+  // initialize shared memory
+ fileDescr_sm = shm_open(sharedMemoryName, O_RDONLY, 0);
+  if (fileDescr_sm == ERROR)
+    {
+      fprintf(stderr, "Error in opening shared memory, %s\n", strerror(errno));
+      BailOut("Could not create shared memory");
+    }
+
+  // fixing the shared memory to a define size (coming from the agrv)
+/*  if (ftruncate(fileDescr_sm, buffersize * sizeof(char)) == ERROR)
+    {
+      fprintf(stderr, "Error in truncating shared memory, %s\n", strerror(errno));
+      BailOut("Could not truncate shared memory");
+    }*/
+
+  sharedMemory = mmap(NULL, size * sizeof(char), PROT_READ, MAP_SHARED, fileDescr_sm, 0);
+  if (sharedMemory == MAP_FAILED)
+    {
+      fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
+      BailOut("Could not map the memory");
+    }
+
+  return;
+}
+
+static void removeRessources(size_t size)
+{
+  /* close the read semaphore */
+  int semaphore_read_close;
+  semaphore_read_close = sem_close(readSemaphore);
+  if (semaphore_read_close == -1)
+    {
+      fprintf(stderr, "Error in closing read semaphore, %s\n", strerror(errno));
+      BailOut("Could not close read Semaphore\n");
+    }
+
+  /* close the write semaphore */
+  int semaphore_write_close = sem_close(writeSemaphore);
+  if (semaphore_write_close == -1)
+    {
+      fprintf(stderr, "Error in closing write semaphore, %s\n", strerror(errno));
+      BailOut("Could not close write Semaphore\n");
+      exit (EXIT_FAILURE);
+    }
+
+  /* unlink the read semaphore */
+  int semaphore_read_unlink = sem_unlink(semaphoreReadName);
+  if (semaphore_read_unlink == -1)
+  {
+    fprintf(stderr, "Error in unlinking read semaphore: %s\n", strerror(errno));
+    BailOut("Could not unlink read Semaphore\n");
+    exit(EXIT_FAILURE);
+  }
+
+  /* unlink the semaphore, if not done, error EEXIST */
+  int semaphore_write_unlink = sem_unlink(semaphoreWriteName);
+  if  (semaphore_write_unlink == -1)
+    {
+      fprintf(stderr, "Error in unlinking write semaphore , %s\n", strerror(errno));
+      BailOut("Could not unlink write Semaphore\n");
+    }
+
+  /* unmap the memory */
+  /* TODO: unmap fails every time, but the memory is deleted */
+  int unmapReturn = munmap(sharedMemory, size);
+  if (unmapReturn == ERROR)
+    {
+      fprintf(stderr, "Error in unmapping memory, %s\n", strerror(errno));
+      BailOut("Could not unmap memory\n");
+      //return ERROR;
+    }
+
+  /* close the memory file */
+  int closeMemory = close(fileDescr_sm);
+  if (closeMemory == ERROR)
+    {
+      fprintf(stderr, "Error in closing memory file, %s\n", strerror(errno));
+      BailOut("Could not close memory file\n");
+    }
+
+  /* unlink the memory file from /dev/shm/ */
+  if (shm_unlink(sharedMemoryName) == ERROR)
+    {
+      fprintf(stderr, "Error in unlinking memory file, %s\n", strerror(errno));
+      BailOut("Could not unlink memory file\n");
+    }
+
 }
