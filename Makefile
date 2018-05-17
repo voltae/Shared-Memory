@@ -8,9 +8,8 @@ CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-commo
 CC=gcc
 LDLIBS = -lpthread -lrt
 
-OBJECTS_RECEIVER=receiver_test.o common.o
-OBJECTS_SENDER=sender_test.o common.o
-HEADER=common.h
+OBJECTS_RECEIVER=receiver_test.o
+OBJECTS_SENDER=sender_test.o
 
 DOXYGEN=doxygen
 CD=cd
@@ -25,12 +24,17 @@ EXCLUDE_PATTERN=footrulewidth
 all: receivertest sendertest
 
 receivertest: $(OBJECTS_RECEIVER)
-	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) $(HEADER) -o$@ $(LDLIBS)
+	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) -o$@ $(LDLIBS)
 
 sendertest: $(OBJECTS_SENDER)
-	$(CC) $(CFLAGS) $(OBJECTS_SENDER) $(HEADER) -o$@ $(LDLIBS)
+	$(CC) $(CFLAGS) $(OBJECTS_SENDER) -o$@ $(LDLIBS)
 
+#runs the test on annuminas
+runtest: receivertest sendertest
+	test_sender_empfaenger.sh -s./sendertest -e./receivertest -f
 
+# Target testsimple
+# TODO: Remove on submission
 testsimple: sender_simple receiver_simple
 
 sender_simple: sender_simple.c
