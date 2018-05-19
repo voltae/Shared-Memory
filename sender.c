@@ -102,7 +102,6 @@ int main(int argc, char** argv) {
     {
         print_usage(argv[0]);
     }
-    printf("argc: %d, optind: %d\n", argc, optind);
     if (bError) {
         print_usage(argv[0]);
     }
@@ -169,7 +168,7 @@ static void createSemaphores(size_t size, const char* programName) {
     readSemaphore = sem_open(semaphoreReadName, O_CREAT | O_EXCL, S_IRWXU, 0);
     if (readSemaphore == SEM_FAILED) {
         /* Error message */
-        fprintf(stderr, "Error in creating semaphore, %s\n", strerror(errno));
+        fprintf(stderr, "Error in creating read-semaphore, %s\n", strerror(errno));
         bailOut(programName, "Could not create Semaphore");
     }
 
@@ -181,7 +180,7 @@ static void createSemaphores(size_t size, const char* programName) {
     writeSemaphore = sem_open(semaphoreWriteName, O_CREAT | O_EXCL, S_IRWXU, size);
     if (writeSemaphore == SEM_FAILED) {
         /* Error message */
-        fprintf(stderr, "Error in creating semaphore, %s\n", strerror(errno));
+        fprintf(stderr, "Error in creating write-semaphore, %s\n", strerror(errno));
         bailOut(programName, "Could not create Semaphore");
     }
 }
