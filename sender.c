@@ -36,7 +36,7 @@ static void bailOut(const char* porgramName, const char* message);
 
 static sem_t* readSemaphore = NULL;
 static sem_t* writeSemaphore = NULL;
-static int* sharedMemory = NULL;
+static short int* sharedMemory = NULL;
 
 /* Number of write processes */
 static unsigned int w;
@@ -122,11 +122,11 @@ int main(int argc, char** argv) {
     /* Create shared Memory */
     createSharedMemory(buffersize, NULL);
     // initialize the reading char for the shared memory
-    int readingChar;
+    short int readingChar;
 
     while ((readingChar = fgetc(stdin)) != EOF) {
         // write index is the same as the read index. writer must wait
-        int semaphoreWait = sem_wait(writeSemaphore);
+        short int semaphoreWait = sem_wait(writeSemaphore);
         if (semaphoreWait == ERROR) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
             bailOut(argv[0], "Could not wait for Semaphore");

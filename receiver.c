@@ -38,7 +38,7 @@ static void BailOut(const char *message);
 /* references to the semaphores and the shared memory */
 static sem_t *readSemaphore = NULL;
 static sem_t *writeSemaphore = NULL;
-static char *sharedMemory = NULL;
+static short int *sharedMemory = NULL;
 
 /* Number of read processes */
 static unsigned int r;
@@ -142,8 +142,8 @@ int main (int argc, char **argv)
   /* open the semaphores */
   createSemaphores ();
 
-  // initialize the reading char for the shared memory
-  int readingInt;
+  // initialize the reading int for the shared memory
+  short int readingInt;
 
   /* open the shared memory */
   createSharedMemory (buffersize);
