@@ -13,6 +13,7 @@
 
 #include <errno.h>      // for errno global constant
 #include <string.h>     // for strerror
+#include <assert.h>
 
 #define NAMELLENGTH 14
 
@@ -68,11 +69,14 @@ int main (int argc, char **argv)
   /* store the progam name */
   szCommand = argv[0];
 
-  size_t buffersize = 0; // buffersize of memory
   int opt;    // option for getop
-  long bufferTemp;
+  int bOptionM = 0;   // Flag for the 'm' option
+  int bError = 0;     // Flag for Option Error
+  size_t buffersize = 0;
+  long bufferTemp = 0;
   char *stringInt = NULL;
-  /* check if arguments are more 1 */
+
+  /* check if no paramters are given */
   if (argc < 2)
     {
       print_usage ();
@@ -82,24 +86,45 @@ int main (int argc, char **argv)
     {
       switch (opt)
         {
-          case 1:
-            print_usage ();
           case 'm':
             {
-              bufferTemp = strtol (optarg, &stringInt, 10);
-              if ((bufferTemp == ERROR) || stringInt != NULL)
+              if (bOptionM)
                 {
-                  /* error handing */
-                  print_usage ();
+                  bError = 1;
+                  break;
                 }
-              buffersize = (size_t) bufferTemp;
+              bOptionM = 1;
+              bufferTemp = strtol (optarg, &stringInt,10);
               break;
             }
+          case '?':
+            bError = 1;
+            break;
           default:
-            print_usage ();
+            assert (0);   /* should never be reached */
           break;
         }
     }
+
+  if (optopt == 'm')    /* parameter 'm' with no argument */
+    {
+      print_usage ();
+    }
+  printf ("argc: %d, optind: %d\n", argc, optind);
+  if (bError)
+    {
+      print_usage ();
+    }
+  if (argc != optind)
+    {
+      print_usage ();
+    }
+  if ((errno == ERANGE) || (strcmp (stringInt, "\0") != 0) || (bufferTemp == 0)|| (bufferTemp >> 29))
+    {
+      print_usage ();
+    }
+
+  buffersize = (size_t)bufferTemp;
 
   /* Set the ressource names */
   setRessourcesName ();
