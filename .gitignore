@@ -396,3 +396,5 @@ __pycache__/
 
 
 # End of https://www.gitignore.io/api/xcode,clion,visualstudio
+CMakeLists.txt
+test_sender_empfaenger.sh
