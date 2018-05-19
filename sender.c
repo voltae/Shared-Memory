@@ -36,7 +36,7 @@ static void bailOut(const char* porgramName, const char* message);
 
 static sem_t* readSemaphore = NULL;
 static sem_t* writeSemaphore = NULL;
-static char* sharedMemory = NULL;
+static int* sharedMemory = NULL;
 
 /* Number of write processes */
 static unsigned int w;
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
     /* Create shared Memory */
     createSharedMemory(buffersize, NULL);
     // initialize the reading char for the shared memory
-    char readingChar;
+    int readingChar;
 
     while ((readingChar = fgetc(stdin)) != EOF) {
         // write index is the same as the read index. writer must wait
