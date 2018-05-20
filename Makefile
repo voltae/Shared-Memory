@@ -5,7 +5,7 @@
 
 # Define the required macros
 CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-common -ftrapv -O3 -g -std=gnu11
-CC=gcc52
+CC=gcc
 LDLIBS = -lpthread -lrt
 
 OBJECTS_RECEIVER=receiver.o
@@ -29,10 +29,10 @@ ID = $(shell id -g)
 all: receiver sender
 
 receiver: $(OBJECTS_RECEIVER) $(OBJECTS_COMMON)
-	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) $(HEADER) -o$@ $(LDLIBS)
+	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) $(OBJECTS_COMMON) $(HEADER) -o$@ $(LDLIBS)
 
 sender: $(OBJECTS_SENDER) $(OBJECTS_COMMON)
-	$(CC) $(CFLAGS) $(OBJECTS_SENDER) $(HEADER) -o$@ $(LDLIBS)
+	$(CC) $(CFLAGS) $(OBJECTS_SENDER) $(OBJECTS_COMMON) $(HEADER) -o$@ $(LDLIBS)
 
 #runs the test on annuminas
 runtest: receiver sender
