@@ -5,7 +5,7 @@
 
 # Define the required macros
 CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-common -ftrapv -O3 -g -std=gnu11
-CC=gcc
+CC=gcc52
 LDLIBS = -lpthread -lrt
 
 OBJECTS_RECEIVER=receiver.o
