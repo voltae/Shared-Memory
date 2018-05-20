@@ -21,9 +21,9 @@ static int fileDescr;
 semaphores getSemaphores(size_t size) {
     semaphores sems;
 
-    if(strcmp(semaphoreReadName, "\0") == 0)
+    if (strcmp(semaphoreReadName, "\0") == 0)
         setRessourcesNames();
-    
+
     if (readSemaphore != NULL)
         sems.readSemaphore = readSemaphore;
     else {
@@ -55,14 +55,13 @@ semaphores getSemaphores(size_t size) {
     return sems;
 }
 
-sharedmem getSharedMem (size_t size) {
+sharedmem getSharedMem(size_t size) {
     sharedmem shared;
 
-    if (sharedMemory != NULL){
+    if (sharedMemory != NULL) {
         shared.sharedMemory = sharedMemory;
         shared.fileDescriptor = fileDescr;
-    }
-    else{
+    } else {
         if (strcmp(sharedMemoryName, "\0") == 0) {
             setRessourcesNames();
         }
@@ -93,6 +92,8 @@ sharedmem getSharedMem (size_t size) {
             return shared;
         }
     }
+
+    return shared;
 }
 
 static void setRessourcesNames(void) {
