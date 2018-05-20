@@ -26,7 +26,7 @@ static char semaphoreReadName[NAMELLENGTH];  // Semaphore read Name with own ann
 static char semaphoreWriteName[NAMELLENGTH];  // Semaphore write Name with own annuminas uid
 static char sharedMemoryName[NAMELLENGTH];     // Shared memory name
 
-static size_t readParameters(const int argc, char* const argv[]);
+static size_t readParameters(int argc, char* const argv[]);
 
 static void setRessourcesName(void);
 
