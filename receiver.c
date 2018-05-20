@@ -262,7 +262,7 @@ static void createSharedMemory (size_t size)
       BailOut("Could not truncate shared memory");
     }*/
 
-  sharedMemory = mmap (NULL, size * sizeof (char), PROT_READ, MAP_SHARED, fileDescr_sm, 0);
+  sharedMemory = mmap (NULL, size * sizeof (short), PROT_READ, MAP_SHARED, fileDescr_sm, 0);
   if (sharedMemory == MAP_FAILED)
     {
       fprintf (stderr, "Error in mapping memory, %s\n", strerror (errno));

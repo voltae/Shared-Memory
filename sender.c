@@ -117,9 +117,9 @@ int main(int argc, char** argv) {
     /* Set the ressource names */
     setRessourcesName();
     /* open the semaphores */
-    createSemaphores(buffersize, NULL);
+    createSemaphores(buffersize, argv[0]);
     /* Create shared Memory */
-    createSharedMemory(buffersize, NULL);
+    createSharedMemory(buffersize, argv[0]);
     // initialize the reading char for the shared memory
     short int readingChar;
 
@@ -203,13 +203,13 @@ static void createSharedMemory(size_t size, const char* programName) {
     }
 
     // fixing the shared memory to a define size (coming from the agrv)
-    int returrnVal = ftruncate(fileDescr_sm, size * sizeof(char));
+    int returrnVal = ftruncate(fileDescr_sm, size * sizeof(short));
     if (returrnVal == ERROR) {
         fprintf(stderr, "Error in truncating shared memory, %s\n", strerror(errno));
         bailOut(programName, "Could not truncate shared memory");
     }
 
-    sharedMemory = mmap(NULL, size * sizeof(char), PROT_WRITE, MAP_SHARED, fileDescr_sm, 0);
+    sharedMemory = mmap(NULL, size * sizeof(short), PROT_WRITE, MAP_SHARED, fileDescr_sm, 0);
     if (sharedMemory == MAP_FAILED) {
         fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
         bailOut(programName, "Could not map the memory");
