@@ -96,6 +96,76 @@ sharedmem getSharedMem(size_t size) {
     return shared;
 }
 
+void removeRessources (size_t size)
+{
+    /* Check if the read semaphore pointer exists */
+    if (readSemaphore != NULL)
+    {
+        /* close the read semaphore */
+        int semaphore_read_close;
+        semaphore_read_close = sem_close (readSemaphore);
+        if (semaphore_read_close == -1)
+        {
+            fprintf (stderr, "Error in closing read semaphore, %s\n", strerror (errno));
+        }
+
+
+        /* unlink the read semaphore */
+        int semaphore_read_unlink = sem_unlink (semaphoreReadName);
+        if (semaphore_read_unlink == -1)
+        {
+            fprintf (stderr, "Error in unlinking read semaphore: %s\n", strerror (errno));
+        }
+        readSemaphore = NULL;
+    }
+
+    /* check if write semaphore pointer exists */
+    if (writeSemaphore != NULL)
+    {
+        /* close the write semaphore */
+        int semaphore_write_close = sem_close (writeSemaphore);
+        if (semaphore_write_close == -1)
+        {
+            fprintf (stderr, "Error in closing write semaphore, %s\n", strerror (errno));
+        }
+
+
+        /* unlink the semaphore, if not done, error EEXIST */
+        int semaphore_write_unlink = sem_unlink (semaphoreWriteName);
+        if (semaphore_write_unlink == -1)
+        {
+            fprintf (stderr, "Error in unlinking write semaphore , %s\n", strerror (errno));
+        }
+        writeSemaphore = NULL;
+    }
+
+    if (sharedMemory != NULL)
+    {
+        /* unmap the memory */
+        /* TODO: unmap fails every time, but the memory is deleted */
+        int unmapReturn = munmap (sharedMemory, size);
+        if (unmapReturn == ERROR)
+        {
+            fprintf (stderr, "Error in unmapping memory, %s\n", strerror (errno));
+        }
+
+        /* close the memory file */
+        int closeMemory = close (fileDescr);
+        if (closeMemory == ERROR)
+        {
+            fprintf (stderr, "Error in closing memory file, %s\n", strerror (errno));
+        }
+
+        /* unlink the memory file from /dev/shm/ */
+        if (shm_unlink (sharedMemoryName) == ERROR)
+        {
+            fprintf (stderr, "Error in unlinking memory file, %s\n", strerror (errno));
+        }
+
+        sharedMemory = NULL;
+    }
+}
+
 static void setRessourcesNames(void) {
 
     int uid = getuid();  // These functions are always successful. man7
