@@ -154,9 +154,9 @@ static void setRessourcesName(void) {
     int uid = getuid();  // These functions are always successful. man7
 
     /* create read semaphore */
-    snprintf(semaphoreReadName, 13, "/sem_%d", 1000 * uid + 0);
-    snprintf(semaphoreWriteName, 13, "/sem_%d", 1000 * uid + 1);
-    snprintf(sharedMemoryName, 13, "/shm_%d", 1000 * uid + 0);
+    snprintf(semaphoreReadName, NAMELLENGTH, "/sem_%d", 1000 * uid + 0);
+    snprintf(semaphoreWriteName, NAMELLENGTH, "/sem_%d", 1000 * uid + 1);
+    snprintf(sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
 }
 
 static void createSemaphores(size_t size, const char* programName) {
