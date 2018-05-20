@@ -39,7 +39,7 @@ semaphores getSemaphores(size_t size) {
 
     writeSemaphore = sem_open(semaphoreWriteName, O_CREAT | O_EXCL, S_IRWXU, size);
     if (writeSemaphore == SEM_FAILED) {
-        if(errno == EEXIST)
+        if (errno == EEXIST)
             writeSemaphore = sem_open(semaphoreWriteName, O_RDWR, 0);
 
         if (writeSemaphore == SEM_FAILED) {
@@ -59,6 +59,7 @@ semaphores getSemaphores(size_t size) {
 //TODO: rewrite to single error path
 sharedmem getSharedMem(size_t size, int flag) {
     sharedmem shared;
+    int protection;
 
     int uid = getuid();  // These functions are always successful. man7
     snprintf(sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
@@ -66,27 +67,36 @@ sharedmem getSharedMem(size_t size, int flag) {
     // initialize shared memory
     fileDescr = shm_open(sharedMemoryName, O_CREAT | O_EXCL | flag, S_IRWXU);
     if (fileDescr == ERROR) {
-        if(errno == EEXIST)
-            fileDescr = shm_open (sharedMemoryName, flag, 0);
+        if (errno == EEXIST)
+            fileDescr = shm_open(sharedMemoryName, flag, 0);
 
-        if(fileDescr == ERROR){
+        if (fileDescr == ERROR) {
             fprintf(stderr, "Sender: Error in opening shared memory, %s\n", strerror(errno));
             shared.sharedMemory = NULL;
             shared.fileDescriptor = 0;
             return shared;
         }
-    } else {
+    } else if (flag & O_WRONLY) {
         // fixing the shared memory to a define size (coming from the agrv)
         int returrnVal = ftruncate(fileDescr, size * sizeof(short));
         if (returrnVal == ERROR) {
-            fprintf(stderr, "Error in truncating shared memory, %s\n", strerror(errno));
+            fprintf(stderr, "errno: %d Error in truncating shared memory, %s\n", errno, strerror(errno));
             shared.sharedMemory = NULL;
             shared.fileDescriptor = 0;
             return shared;
         }
     }
 
-    sharedMemory = mmap(NULL, size * sizeof(short), PROT_WRITE, MAP_SHARED, fileDescr, 0);
+    if (flag == O_RDONLY)
+        protection = PROT_READ;
+    else if (flag == O_WRONLY)
+        protection = PROT_WRITE;
+    else {
+        fprintf(stderr, "I don't think so!");
+        assert(0);
+    }
+
+    sharedMemory = mmap(NULL, size * sizeof(short), protection, MAP_SHARED, fileDescr, 0);
     if (sharedMemory == MAP_FAILED) {
         fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
         shared.sharedMemory = NULL;
