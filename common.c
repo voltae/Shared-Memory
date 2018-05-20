@@ -57,17 +57,17 @@ semaphores getSemaphores(size_t size) {
 }
 
 //TODO: rewrite to single error path
-sharedmem getSharedMem(size_t size) {
+sharedmem getSharedMem(size_t size, int flag) {
     sharedmem shared;
 
     int uid = getuid();  // These functions are always successful. man7
     snprintf(sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
 
     // initialize shared memory
-    fileDescr = shm_open(sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
+    fileDescr = shm_open(sharedMemoryName, O_CREAT | O_EXCL | flag, S_IRWXU);
     if (fileDescr == ERROR) {
         if(errno == EEXIST)
-            fileDescr = shm_open (sharedMemoryName, O_RDONLY, 0);
+            fileDescr = shm_open (sharedMemoryName, flag, 0);
 
         if(fileDescr == ERROR){
             fprintf(stderr, "Sender: Error in opening shared memory, %s\n", strerror(errno));

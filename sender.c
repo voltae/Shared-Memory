@@ -6,13 +6,7 @@
 
 static size_t readParameters(int argc, char* const argv[]);
 
-static void setRessourcesName(void);
-
-static void createSemaphores(size_t size, const char* programName);
-
-static void createSharedMemory(size_t size, const char* programName);
-
-static void bailOut(const char* porgramName, const char* message);
+static void bailOut(const char* programName, const char* message);
 
 void print_usage(const char* porgramName);
 
@@ -32,11 +26,13 @@ int main(int argc, char* argv[]) {
 
     /* open the semaphores */
     sems = getSemaphores(buffersize);
-    if(sems.readSemaphore == NULL || sems.writeSemaphore){
-        bailOut(argv[0], "Could not create Semaphore");
-    }
+    if(sems.readSemaphore == NULL && sems.writeSemaphore == 0)
+        bailOut(argv[0], "Could not create semaphore");
+
     /* Create shared Memory */
-    mem = getSharedMem(buffersize);
+    mem = getSharedMem(buffersize, O_RDWR);
+    if(mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
+        bailOut(argv[0], "Could not create sharedmemory");
     // initialize the reading char for the shared memory
     short int readingChar;
 
@@ -126,9 +122,9 @@ void print_usage(const char* porgramName) {
 /* Report Error and allocate ressources
  * Since we are in the sender process, we are responsable for allocating all ressources,
  */
-void bailOut(const char* porgramName, const char* message) {
+void bailOut(const char* programName, const char* message) {
     if (message != NULL) {
-        fprintf(stderr, "%s: %s\n", porgramName, message);
+        fprintf(stderr, "%s: %s\n", programName, message);
     }
 
 }
