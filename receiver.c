@@ -2,21 +2,11 @@
 // Created by marcaurel on 11.05.18.
 //
 
-#include <stdio.h>
-#include <stdlib.h>  // for EXIT_SUCCESS etc
 
-#include <semaphore.h>  // for semaphores
-#include <fcntl.h>      // For O_* constants
-#include <sys/stat.h>   // For mode constants
-#include <sys/mman.h>   // for shared memory
-#include <unistd.h>     // for ftruncate() truncation shared memory
 
-#include <errno.h>      // for errno global constant
-#include <string.h>     // for strerror
-#include <sys/sysctl.h> // for SHMMAX
-#include <linux/shm.h>  // for SHMMAX
-#include <limits.h>     // for ULONG max
-#include <assert.h>
+
+#include "sharedMemory.h"
+
 
 #define NAMELLENGTH 14
 
