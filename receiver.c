@@ -104,7 +104,7 @@ int main (int argc, char **argv)
 
   /* open the semaphores */
   sems = getSemaphores(buffersize);
-  if(sems.readSemaphore == NULL || sems.writeSemaphore){
+  if(sems.readSemaphore == NULL || sems.writeSemaphore == NULL){
     BailOut("Could not create Semaphore");
   }
 
