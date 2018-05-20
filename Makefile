@@ -10,6 +10,9 @@ LDLIBS = -lpthread -lrt
 
 OBJECTS_RECEIVER=receiver.o
 OBJECTS_SENDER=sender.o
+OBJECTS_COMMON=common.o
+HEADER=sharedMemory.h
+
 
 DOXYGEN=doxygen
 CD=cd
@@ -25,11 +28,11 @@ ID = $(shell id -g)
 
 all: receiver sender
 
-receiver: $(OBJECTS_RECEIVER)
-	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) -o$@ $(LDLIBS)
+receiver: $(OBJECTS_RECEIVER) $(OBJECTS_COMMON)
+	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) $(HEADER) -o$@ $(LDLIBS)
 
-sender: $(OBJECTS_SENDER)
-	$(CC) $(CFLAGS) $(OBJECTS_SENDER) -o$@ $(LDLIBS)
+sender: $(OBJECTS_SENDER) $(OBJECTS_COMMON)
+	$(CC) $(CFLAGS) $(OBJECTS_SENDER) $(HEADER) -o$@ $(LDLIBS)
 
 #runs the test on annuminas
 runtest: receiver sender
