@@ -6,7 +6,7 @@
 
 static size_t readParameters(int argc, char* const argv[]);
 
-static void bailOut(const char* programName, const char* message);
+static void bailOut(const char* programName, const char* message, size_t size);
 
 void print_usage(const char* porgramName);
 
@@ -24,15 +24,15 @@ int main(int argc, char* argv[]) {
 
     buffersize = readParameters(argc, argv);
 
-    /* open the semaphores */
+    /* get the semaphores */
     sems = getSemaphores(buffersize);
     if(sems.readSemaphore == NULL && sems.writeSemaphore == 0)
-        bailOut(argv[0], "Could not create semaphore");
+        bailOut(argv[0], "Could not create semaphore", buffersize);
 
-    /* Create shared Memory */
+    /* get the shared Memory */
     mem = getSharedMem(buffersize, O_RDWR);
     if(mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
-        bailOut(argv[0], "Could not create sharedmemory");
+        bailOut(argv[0], "Could not create sharedmemory", buffersize);
     // initialize the reading char for the shared memory
     short int readingChar;
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
         short int semaphoreWait = sem_wait(sems.writeSemaphore);
         if (semaphoreWait == ERROR) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
-            bailOut(argv[0], "Could not wait for Semaphore");
+            bailOut(argv[0], "Could not wait for Semaphore", buffersize);
         }
         /* read a char from shared memory */
         mem.sharedMemory[w] = readingChar;
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
         int retval = sem_post(sems.readSemaphore);
         if (retval == ERROR) {
             fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
-            bailOut(argv[0], "Could not post for Semaphore");
+            bailOut(argv[0], "Could not post for Semaphore", buffersize);
         }
         // increment the counter
         w = (w + 1) % buffersize;
@@ -122,9 +122,8 @@ void print_usage(const char* porgramName) {
 /* Report Error and allocate ressources
  * Since we are in the sender process, we are responsable for allocating all ressources,
  */
-void bailOut(const char* programName, const char* message) {
-    if (message != NULL) {
+void bailOut(const char* programName, const char* message, size_t size) {
+    removeRessources (size);
+    if (message != NULL)
         fprintf(stderr, "%s: %s\n", programName, message);
-    }
-
 }
