@@ -61,6 +61,17 @@ sharedmem getSharedMem(size_t size, int flag) {
     sharedmem shared;
     int protection;
 
+    if (flag == O_RDONLY)
+        protection = PROT_READ;
+    else if (flag == O_RDWR)    //Has to be O_RDWR because mmap demands it
+        protection = PROT_WRITE;
+    else {
+        errno = EINVAL;
+        shared.sharedMemory = NULL;
+        shared.fileDescriptor = 0;
+        return shared;
+    }
+
     int uid = getuid();  // These functions are always successful. man7
     snprintf(sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
 
@@ -71,29 +82,20 @@ sharedmem getSharedMem(size_t size, int flag) {
             fileDescr = shm_open(sharedMemoryName, flag, 0);
 
         if (fileDescr == ERROR) {
-            fprintf(stderr, "Sender: Error in opening shared memory, %s\n", strerror(errno));
+            fprintf(stderr, "Error in opening shared memory, %s\n", strerror(errno));
             shared.sharedMemory = NULL;
             shared.fileDescriptor = 0;
             return shared;
         }
-    } else if (flag & O_WRONLY) {
+    } else if (flag == O_RDWR) {
         // fixing the shared memory to a define size (coming from the agrv)
         int returrnVal = ftruncate(fileDescr, size * sizeof(short));
         if (returrnVal == ERROR) {
-            fprintf(stderr, "errno: %d Error in truncating shared memory, %s\n", errno, strerror(errno));
+            fprintf(stderr, "Error in truncating shared memory, %s\n", strerror(errno));
             shared.sharedMemory = NULL;
             shared.fileDescriptor = 0;
             return shared;
         }
-    }
-
-    if (flag == O_RDONLY)
-        protection = PROT_READ;
-    else if (flag == O_WRONLY)
-        protection = PROT_WRITE;
-    else {
-        fprintf(stderr, "I don't think so!");
-        assert(0);
     }
 
     sharedMemory = mmap(NULL, size * sizeof(short), protection, MAP_SHARED, fileDescr, 0);
