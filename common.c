@@ -37,7 +37,7 @@ semaphores getSemaphores(size_t size) {
 
     }
 
-    writeSemaphore = sem_open(semaphoreWriteName, O_CREAT | O_EXCL, S_IRWXU, 0);
+    writeSemaphore = sem_open(semaphoreWriteName, O_CREAT | O_EXCL, S_IRWXU, size);
     if (writeSemaphore == SEM_FAILED) {
         if(errno == EEXIST)
             writeSemaphore = sem_open(semaphoreWriteName, O_RDWR, 0);
