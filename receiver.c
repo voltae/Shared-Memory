@@ -12,9 +12,6 @@ static unsigned int r;
 /* size of ressources */
 size_t buffersize = 0;
 
-/* file descriptor for the shared memory */
-static int fileDescr_sm;
-
 static char *szCommand = "<not yet set>";
 
 /* Global constant for shared memory */
