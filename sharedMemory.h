@@ -24,4 +24,7 @@
 #include <string.h>     // for strerror
 #include <assert.h>
 
+
+#define NAMELLENGTH 14
+#define ERROR -1
 #endif //SHARED_MEMORY_SHAREDMEMORY_H

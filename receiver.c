@@ -1,18 +1,7 @@
 //
 // Created by marcaurel on 11.05.18.
 //
-
-
-
-
 #include "sharedMemory.h"
-
-
-#define NAMELLENGTH 14
-
-typedef enum isError {
-    ERROR = -1, SUCCESS
-} isError;
 
 /* Global constant semaphore read */
 static char semaphoreReadName[NAMELLENGTH];  // Semaphore read Name with own annuminas uid
