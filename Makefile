@@ -5,11 +5,11 @@
 
 # Define the required macros
 CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-common -ftrapv -O3 -g -std=gnu11
-CC=gcc
+CC=gcc52
 LDLIBS = -lpthread -lrt
 
-OBJECTS_RECEIVER=receiver_test.o
-OBJECTS_SENDER=sender_test.o
+OBJECTS_RECEIVER=receiver.o
+OBJECTS_SENDER=sender.o
 
 DOXYGEN=doxygen
 CD=cd
@@ -17,21 +17,23 @@ MV=mv
 RM=rm
 GREP=grep
 EXCLUDE_PATTERN=footrulewidth
+# get the current id from shell
+ID = $(shell id -g)
 
 %.o: %.c
 	$(CC) $(CFLAGS)  -c $<
 
-all: receivertest sendertest
+all: receiver sender
 
-receivertest: $(OBJECTS_RECEIVER)
+receiver: $(OBJECTS_RECEIVER)
 	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) -o$@ $(LDLIBS)
 
-sendertest: $(OBJECTS_SENDER)
+sender: $(OBJECTS_SENDER)
 	$(CC) $(CFLAGS) $(OBJECTS_SENDER) -o$@ $(LDLIBS)
 
 #runs the test on annuminas
-runtest: receivertest sendertest
-	test_sender_empfaenger.sh -s./sendertest -e./receivertest -f
+runtest: receiver sender
+	test_sender_empfaenger.sh -s./sender -e./receiver -f
 
 # Target testsimple
 # TODO: Remove on submission
@@ -45,6 +47,10 @@ receiver_simple: receiver_simple.c
 
 clean:
 	rm -f *.o
+
+#delete the semaphores and shared memory from /dev/shm/ with the naming from the description
+deleteResources:
+	rm /dev/shm/sem.sem_$(ID)* /dev/shm/shm_$(ID)*
 
 .PHONY: distclean
 
@@ -76,7 +82,10 @@ pdf: html
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
 	@echo "... all (the default if no target is provided)"
+	@echo "... testsimple"
+	@echo "... runtest"
 	@echo "... clean"
+	@echo "... deleteResources"
 	@echo "... distclean"
 	@echo "... doc"
 	@echo "... html"
