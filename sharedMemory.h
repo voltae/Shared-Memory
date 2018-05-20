@@ -30,10 +30,7 @@ typedef struct sharedmem {
     int fileDescriptor;
     short int* sharedMemory;
 } sharedmem;
-/* Global constant semaphore read */
-static char semaphoreReadName[NAMELLENGTH];  // Semaphore read Name with own annuminas uid
-static char semaphoreWriteName[NAMELLENGTH];  // Semaphore write Name with own annuminas uid
-static char sharedMemoryName[NAMELLENGTH];     // Shared memory name
 
 semaphores getSemaphores(size_t size);
+sharedmem getSharedMem (size_t size);
 #endif //SHARED_MEMORY_SHAREDMEMORY_H

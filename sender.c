@@ -4,11 +4,6 @@
 
 #include "sharedMemory.h"
 
-/* Global constant semaphore read */
-static char semaphoreReadName[NAMELLENGTH];  // Semaphore read Name with own annuminas uid
-static char semaphoreWriteName[NAMELLENGTH];  // Semaphore write Name with own annuminas uid
-static char sharedMemoryName[NAMELLENGTH];     // Shared memory name
-
 static size_t readParameters(int argc, char* const argv[]);
 
 static void setRessourcesName(void);
@@ -21,14 +16,8 @@ static void bailOut(const char* porgramName, const char* message);
 
 void print_usage(const char* porgramName);
 
-static sem_t* readSemaphore = NULL;
-static sem_t* writeSemaphore = NULL;
-static short int* sharedMemory = NULL;
-
 /* Number of write processes */
 static unsigned int w;
-/* file descriptor for the shared memory */
-static int fileDescr_sm;
 
 /* Global constant for shared memory */
 // file descriptor for the shared memory (is stored on disk "/dev/shm")
@@ -36,29 +25,32 @@ static int fileDescr_sm;
 
 int main(int argc, char* argv[]) {
     size_t buffersize = 0;
+    semaphores sems;
+    sharedmem mem;
 
     buffersize = readParameters(argc, argv);
 
-    /* Set the ressource names */
-    setRessourcesName();
     /* open the semaphores */
-    createSemaphores(buffersize, argv[0]);
+    sems = getSemaphores(buffersize);
+    if(sems.readSemaphore == NULL || sems.writeSemaphore){
+        bailOut(argv[0], "Could not create Semaphore");
+    }
     /* Create shared Memory */
-    createSharedMemory(buffersize, argv[0]);
+    mem = getSharedMem(buffersize);
     // initialize the reading char for the shared memory
     short int readingChar;
 
     while ((readingChar = fgetc(stdin)) != EOF) {
         // write index is the same as the read index. writer must wait
-        short int semaphoreWait = sem_wait(writeSemaphore);
+        short int semaphoreWait = sem_wait(sems.writeSemaphore);
         if (semaphoreWait == ERROR) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
             bailOut(argv[0], "Could not wait for Semaphore");
         }
         /* read a char from shared memory */
-        sharedMemory[w] = readingChar;
+        mem.sharedMemory[w] = readingChar;
 
-        int retval = sem_post(readSemaphore);
+        int retval = sem_post(sems.readSemaphore);
         if (retval == ERROR) {
             fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
             bailOut(argv[0], "Could not post for Semaphore");
@@ -68,8 +60,8 @@ int main(int argc, char* argv[]) {
     }
 
     /* Signalize the receiver that reading is not yet over EOF! has to be read */
-    sharedMemory[w] = EOF;
-    sem_post(readSemaphore);
+    mem.sharedMemory[w] = EOF;
+    sem_post(sems.readSemaphore);
 
     return EXIT_SUCCESS;
 }
@@ -139,71 +131,4 @@ void bailOut(const char* porgramName, const char* message) {
         fprintf(stderr, "%s: %s\n", porgramName, message);
     }
 
-}
-
-static void setRessourcesName(void) {
-
-    int uid = getuid();  // These functions are always successful. man7
-
-    /* create read semaphore */
-    snprintf(semaphoreReadName, NAMELLENGTH, "/sem_%d", 1000 * uid + 0);
-    snprintf(semaphoreWriteName, NAMELLENGTH, "/sem_%d", 1000 * uid + 1);
-    snprintf(sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
-}
-
-static void createSemaphores(size_t size, const char* programName) {
-    if (readSemaphore != NULL) {
-        return;
-    }
-
-    /* Open a new read semaphore */
-    readSemaphore = sem_open(semaphoreReadName, O_CREAT | O_EXCL, S_IRWXU, 0);
-    if (readSemaphore == SEM_FAILED) {
-        /* Error message */
-        fprintf(stderr, "Sender: Error in creating read-semaphore, %s\n", strerror(errno));
-        bailOut(programName, "Could not create Semaphore");
-    }
-
-    if (writeSemaphore != NULL) {
-        return;
-    }
-
-    /* create a new write semaphore */
-    writeSemaphore = sem_open(semaphoreWriteName, O_CREAT | O_EXCL, S_IRWXU, size);
-    if (writeSemaphore == SEM_FAILED) {
-        /* Error message */
-        fprintf(stderr, "Sender: Error in creating write-semaphore, %s\n", strerror(errno));
-        bailOut(programName, "Could not create Semaphore");
-    }
-}
-
-/* Create a new shared memory, it should exist */
-static void createSharedMemory(size_t size, const char* programName) {
-    if (sharedMemory != NULL) {
-        return;
-    }
-
-    if (strcmp(sharedMemoryName, "\0") == 0) {
-        setRessourcesName();
-    }
-
-    // initialize shared memory
-    fileDescr_sm = shm_open(sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
-    if (fileDescr_sm == ERROR) {
-        fprintf(stderr, "Sender: Error in opening shared memory, %s\n", strerror(errno));
-        bailOut(programName, "Could not create shared memory");
-    }
-
-    // fixing the shared memory to a define size (coming from the agrv)
-    int returrnVal = ftruncate(fileDescr_sm, size * sizeof(short));
-    if (returrnVal == ERROR) {
-        fprintf(stderr, "Error in truncating shared memory, %s\n", strerror(errno));
-        bailOut(programName, "Could not truncate shared memory");
-    }
-
-    sharedMemory = mmap(NULL, size * sizeof(short), PROT_WRITE, MAP_SHARED, fileDescr_sm, 0);
-    if (sharedMemory == MAP_FAILED) {
-        fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
-        bailOut(programName, "Could not map the memory");
-    }
 }
