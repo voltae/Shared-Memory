@@ -87,7 +87,7 @@ static size_t readParameters(const int argc, char* const argv[]) {
                 break;
             }
             case '?':
-                bError = 1;
+                print_usage(argv[0]);
                 break;
             default:
                 assert (0);   /* should never be reached */
@@ -95,11 +95,6 @@ static size_t readParameters(const int argc, char* const argv[]) {
         }
     }
 
-
-    if (optopt == 'm')    /* parameter 'm' with no argument */
-    {
-        print_usage(argv[0]);
-    }
     if (bError) {
         print_usage(argv[0]);
     }
@@ -126,4 +121,5 @@ void bailOut(const char* programName, const char* message, size_t size) {
     removeRessources (size);
     if (message != NULL)
         fprintf(stderr, "%s: %s\n", programName, message);
+    exit(EXIT_FAILURE);
 }
