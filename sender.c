@@ -10,41 +10,40 @@ static void bailOut(const char* programName, const char* message, size_t size);
 
 void print_usage(const char* porgramName);
 
-/* Number of write processes */
-static unsigned int w;
 
 /* Global constant for shared memory */
 // file descriptor for the shared memory (is stored on disk "/dev/shm")
 // the linked memory address in current address space
 
 int main(int argc, char* argv[]) {
-    size_t buffersize = 0;
     semaphores sems;
     sharedmem mem;
+    unsigned int sharedMemoryIndex = 0;
+    short int readingChar;
 
-    buffersize = readParameters(argc, argv);
+    /* Parameters */
+    size_t buffersize = readParameters(argc, argv);
 
-    /* get the semaphores */
+    /* Semaphores */
     sems = getSemaphores(buffersize);
     if(sems.readSemaphore == NULL && sems.writeSemaphore == 0)
         bailOut(argv[0], "Could not create semaphore", buffersize);
 
-    /* get the shared Memory */
+    /* Sharedmemory */
     mem = getSharedMem(buffersize, O_RDWR);
     if(mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
         bailOut(argv[0], "Could not create sharedmemory", buffersize);
-    // initialize the reading char for the shared memory
-    short int readingChar;
 
+    /* read from stdin and write to shared memory */
     while ((readingChar = fgetc(stdin)) != EOF) {
         // write index is the same as the read index. writer must wait
-        short int semaphoreWait = sem_wait(sems.writeSemaphore);
+        int semaphoreWait = sem_wait(sems.writeSemaphore);
         if (semaphoreWait == ERROR) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
             bailOut(argv[0], "Could not wait for Semaphore", buffersize);
         }
-        /* read a char from shared memory */
-        mem.sharedMemory[w] = readingChar;
+        /* write a char to shared memory */
+        mem.sharedMemory[sharedMemoryIndex] = readingChar;
 
         int retval = sem_post(sems.readSemaphore);
         if (retval == ERROR) {
@@ -52,11 +51,11 @@ int main(int argc, char* argv[]) {
             bailOut(argv[0], "Could not post for Semaphore", buffersize);
         }
         // increment the counter
-        w = (w + 1) % buffersize;
+        sharedMemoryIndex = (sharedMemoryIndex + 1) % buffersize;
     }
 
-    /* Signalize the receiver that reading is not yet over EOF! has to be read */
-    mem.sharedMemory[w] = EOF;
+    /* Send EOF to the receiver. We are done. */
+    mem.sharedMemory[sharedMemoryIndex] = EOF;
     sem_post(sems.readSemaphore);
 
     return EXIT_SUCCESS;
