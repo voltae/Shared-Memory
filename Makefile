@@ -5,7 +5,6 @@
 
 # Define the required macros
 CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-common -ftrapv -O3 -g -std=gnu11
-CC=gcc52
 LDLIBS = -lpthread -lrt
 
 OBJECTS_RECEIVER=receiver.o
@@ -13,6 +12,11 @@ OBJECTS_SENDER=sender.o
 OBJECTS_COMMON=common.o
 HEADER=sharedMemory.h
 
+#get machines name
+MACHINE := (shell uname -m)
+# conditional change of compiler
+GCC52=gcc52
+GCC=gcc
 
 DOXYGEN=doxygen
 CD=cd
@@ -26,7 +30,13 @@ ID = $(shell id -g)
 %.o: %.c
 	$(CC) $(CFLAGS)  -c $<
 
+# distingush between the two different machines for the compiler
 all: receiver sender
+ifeq ($(MACHINE),x86_64)
+    	CC:=$(GCC)
+else
+    	CC:=$(GCC52)
+endif
 
 receiver: $(OBJECTS_RECEIVER) $(OBJECTS_COMMON)
 	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) $(OBJECTS_COMMON) $(HEADER) -o$@ $(LDLIBS)
