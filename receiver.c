@@ -35,7 +35,7 @@ void BailOut(const char* message) {
     }
 }
 
-size_t checkCommand(const int argc, const char** argv) {
+size_t checkCommand(int argc, char** argv) {
     /* store the progam name */
     szCommand = argv[0];
 
@@ -87,8 +87,7 @@ size_t checkCommand(const int argc, const char** argv) {
     return (size_t)bufferTemp;
 }
 
-int main(const int argc, const char** argv) {
-
+int main(int argc, char** argv) {
     semaphores sems;
     sharedmem mem;
     /* check if no paramters are given */
@@ -104,7 +103,7 @@ int main(const int argc, const char** argv) {
     int readingInt;
 
     /* open the shared memory */
-    mem = getSharedMem(buffersize, O_RDONLY);
+    mem = getSharedMem(buffersize, O_RDWR);
     if (mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
         BailOut("Could not create sharedmemory");
     /* Semaphore wait process */

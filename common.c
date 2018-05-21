@@ -34,14 +34,13 @@ semaphores getSemaphores(size_t size) {
             sems.writeSemaphore = NULL;
             return sems;
         }
-
     }
 
     writeSemaphore = sem_open(semaphoreWriteName, O_CREAT | O_EXCL, S_IRWXU, size);
     if (writeSemaphore == SEM_FAILED) {
-        if (errno == EEXIST)
+        if (errno == EEXIST) {
             writeSemaphore = sem_open(semaphoreWriteName, O_RDWR, 0);
-
+        }
         if (writeSemaphore == SEM_FAILED) {
             /* Error message */
             fprintf(stderr, "Sender: Error in creating write-semaphore, %s\n", strerror(errno));
@@ -58,7 +57,8 @@ semaphores getSemaphores(size_t size) {
 
 //TODO: rewrite to single error path
 sharedmem getSharedMem(size_t size, int flag) {
-    sharedmem shared;
+
+        sharedmem shared;
     int protection;
 
     if (flag == O_RDONLY)
