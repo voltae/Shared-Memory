@@ -12,7 +12,7 @@ static char sharedMemoryName[NAMELLENGTH];     // Shared memory name
 static sem_t* readSemaphore;
 static sem_t* writeSemaphore;
 
-static short int* sharedMemory;
+static int* sharedMemory;
 static int fileDescr;
 
 //TODO: rewrite into one errorhandling path
@@ -89,7 +89,7 @@ sharedmem getSharedMem(size_t size, int flag) {
         }
     } else if (flag == O_RDWR) {
         // fixing the shared memory to a define size (coming from the agrv)
-        int returrnVal = ftruncate(fileDescr, size * sizeof(short));
+        int returrnVal = ftruncate(fileDescr, size * sizeof(int));
         if (returrnVal == ERROR) {
             fprintf(stderr, "Error in truncating shared memory, %s\n", strerror(errno));
             shared.sharedMemory = NULL;
@@ -98,7 +98,7 @@ sharedmem getSharedMem(size_t size, int flag) {
         }
     }
 
-    sharedMemory = mmap(NULL, size * sizeof(short), protection, MAP_SHARED, fileDescr, 0);
+    sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, fileDescr, 0);
     if (sharedMemory == MAP_FAILED) {
         fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
         shared.sharedMemory = NULL;

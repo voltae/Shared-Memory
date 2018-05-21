@@ -109,7 +109,7 @@ int main (int argc, char **argv)
   }
 
   // initialize the reading int for the shared memory
-  short int readingInt;
+  int readingInt;
 
   /* open the shared memory */
   mem = getSharedMem(buffersize, O_RDONLY);

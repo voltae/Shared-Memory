@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     semaphores sems;
     sharedmem mem;
     unsigned int sharedMemoryIndex = 0;
-    short int readingChar;
+    int readingChar;
 
     /* Parameters */
     size_t buffersize = readParameters(argc, argv);

@@ -28,7 +28,7 @@ typedef struct semaphores{
 
 typedef struct sharedmem {
     int fileDescriptor;
-    short int* sharedMemory;
+    int* sharedMemory;
 } sharedmem;
 
 semaphores getSemaphores(size_t size);
