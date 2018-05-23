@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     semaphores sems;
     sharedmem mem;
     unsigned int sharedMemoryIndex = 0;
-    int readingChar;
+    int readingInt;
 
     /* Parameters */
     size_t buffersize = readParameters(argc, argv);
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
         bailOut(argv[0], "Could not create sharedmemory", buffersize);
 
     /* read from stdin and write to shared memory */
-    while ((readingChar = fgetc(stdin)) != EOF) {
+    while ((readingInt = fgetc(stdin)) != EOF) {
         // write index is the same as the read index. writer must wait
         int semaphoreWait = sem_wait(sems.writeSemaphore);
         if (semaphoreWait == ERROR) {
@@ -43,7 +43,12 @@ int main(int argc, char* argv[]) {
             bailOut(argv[0], "Could not wait for Semaphore", buffersize);
         }
         /* write a char to shared memory */
-        mem.sharedMemory[sharedMemoryIndex] = readingChar;
+        //mem.sharedMemory[sharedMemoryIndex] = readingInt;
+        // using memcpy instead of direct
+        if (memcpy((mem.sharedMemory + sharedMemoryIndex), &readingInt, 1) == NULL)
+        {
+            bailOut(argv[0], "Could not write ot memory", buffersize);
+        }
 
         int retval = sem_post(sems.readSemaphore);
         if (retval == ERROR) {
