@@ -7,25 +7,25 @@
 static void BailOut(const char* message);
 
 /* Number of read processes */
-static unsigned int r;
+static size_t r;
 
-/* size of ressources */
+/* size of resources */
 size_t buffersize = 0;
 
-static char* szCommand = "<not yet set>";
+static const char* szCommand = "<not yet set>";
 
 /* Global constant for shared memory */
 // file descriptor for the shared memory (is stored on disk "/dev/shm")
 // the linked memory address in current address space
 
-/* Report Error and free ressources */
+/* Report Error and free resources */
 void print_usage(void) {
     fprintf(stderr, "USAGE: %s [-m] length\n", szCommand);
     exit(EXIT_FAILURE);
 }
 
-/* Report Error and free ressources
- * Since we are in the receiver process, we are responsable for removing all ressources, even in the error case
+/* Report Error and free resources
+ * Since we are in the receiver process, we are responsable for removing all resources, even in the error case
  */
 void BailOut(const char* message) {
     if (message != NULL) {
@@ -34,7 +34,7 @@ void BailOut(const char* message) {
         exit(EXIT_FAILURE);
     }
 }
-
+/* size_t = unsigned long typedef stddef. */
 size_t checkCommand(int argc, char** argv) {
     /* store the progam name */
     szCommand = argv[0];
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
     semaphores sems;
     sharedmem mem;
     /* check if no paramters are given */
-    buffersize = (size_t) checkCommand(argc, argv);
+    buffersize = checkCommand(argc, argv);
 
     /* open the semaphores */
     sems = getSemaphores(buffersize);
