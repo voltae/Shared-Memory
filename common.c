@@ -56,30 +56,18 @@ semaphores getSemaphores(size_t size) {
 }
 
 //TODO: rewrite to single error path
-sharedmem getSharedMem(size_t size, int flag) {
-
-        sharedmem shared;
-    int protection;
-
-    if (flag == O_RDONLY)
-        protection = PROT_READ;
-    else if (flag == O_RDWR)    //Has to be O_RDWR because mmap demands it
-        protection = PROT_WRITE;
-    else {
-        errno = EINVAL;
-        shared.sharedMemory = NULL;
-        shared.fileDescriptor = 0;
-        return shared;
-    }
+sharedmem getSharedMem(size_t size) {
+    sharedmem shared;
+    int protection = PROT_WRITE;
 
     int uid = getuid();  // These functions are always successful. man7
     snprintf(sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
 
     // initialize shared memory
-    fileDescr = shm_open(sharedMemoryName, O_CREAT | O_EXCL | flag, S_IRWXU);
+    fileDescr = shm_open(sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
     if (fileDescr == ERROR) {
         if (errno == EEXIST)
-            fileDescr = shm_open(sharedMemoryName, flag, 0);
+            fileDescr = shm_open(sharedMemoryName, O_RDWR, 0);
 
         if (fileDescr == ERROR) {
             fprintf(stderr, "Error in opening shared memory, %s\n", strerror(errno));
@@ -87,7 +75,7 @@ sharedmem getSharedMem(size_t size, int flag) {
             shared.fileDescriptor = 0;
             return shared;
         }
-    } else if (flag == O_RDWR) {
+    } else {
         // fixing the shared memory to a define size (coming from the agrv)
         int returrnVal = ftruncate(fileDescr, size * sizeof(int));
         if (returrnVal == ERROR) {

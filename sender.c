@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
         bailOut(argv[0], "Could not create semaphore", buffersize);
 
     /* Sharedmemory */
-    mem = getSharedMem(buffersize, O_RDWR);
+    mem = getSharedMem(buffersize);
     if(mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
         bailOut(argv[0], "Could not create sharedmemory", buffersize);
 

@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     int readingInt;
 
     /* open the shared memory */
-    mem = getSharedMem(buffersize, O_RDWR);
+    mem = getSharedMem(buffersize);
     if (mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
         BailOut("Could not create sharedmemory");
     /* Semaphore wait process */
