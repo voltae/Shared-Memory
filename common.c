@@ -4,12 +4,6 @@
 
 #include "sharedMemory.h"
 
-/* Global constant semaphore read */
-static char sharedMemoryName[NAMELLENGTH];     // Shared memory name
-
-static int* sharedMemory;
-static int fileDescr;
-
 //TODO: rewrite into one errorhandling path
 semaphores getSemaphores(size_t size) {
     semaphores sems;
@@ -54,15 +48,15 @@ sharedmem getSharedMem(size_t size) {
     int protection = PROT_WRITE;
 
     int uid = getuid();  // These functions are always successful. man7
-    snprintf(sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
+    snprintf(shared.sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
 
     // initialize shared memory
-    fileDescr = shm_open(sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
-    if (fileDescr == ERROR) {
+    shared.fileDescriptor = shm_open(shared.sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
+    if (shared.fileDescriptor == ERROR) {
         if (errno == EEXIST)
-            fileDescr = shm_open(sharedMemoryName, O_RDWR, 0);
+            shared.fileDescriptor = shm_open(shared.sharedMemoryName, O_RDWR, 0);
 
-        if (fileDescr == ERROR) {
+        if (shared.fileDescriptor == ERROR) {
             fprintf(stderr, "Error in opening shared memory, %s\n", strerror(errno));
             shared.sharedMemory = NULL;
             shared.fileDescriptor = 0;
@@ -70,7 +64,7 @@ sharedmem getSharedMem(size_t size) {
         }
     } else {
         // fixing the shared memory to a define size (coming from the agrv)
-        int returrnVal = ftruncate(fileDescr, size * sizeof(int));
+        int returrnVal = ftruncate(shared.fileDescriptor, size * sizeof(int));
         if (returrnVal == ERROR) {
             fprintf(stderr, "Error in truncating shared memory, %s\n", strerror(errno));
             shared.sharedMemory = NULL;
@@ -79,16 +73,14 @@ sharedmem getSharedMem(size_t size) {
         }
     }
 
-    sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, fileDescr, 0);
-    if (sharedMemory == MAP_FAILED) {
+    shared.sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, shared.fileDescriptor, 0);
+    if (shared.sharedMemory == MAP_FAILED) {
         fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
         shared.sharedMemory = NULL;
         shared.fileDescriptor = 0;
         return shared;
     }
 
-    shared.sharedMemory = sharedMemory;
-    shared.fileDescriptor = fileDescr;
     return shared;
 }
 
@@ -129,26 +121,26 @@ void removeRessources(size_t size, semaphores* sems, sharedmem* shared) {
     }
 
     if (shared != NULL) {
-        if (sharedMemory != NULL) {
+        if (shared->sharedMemory != NULL) {
             /* unmap the memory */
             /* TODO: unmap fails every time, but the memory is deleted */
-            int unmapReturn = munmap(sharedMemory, size);
+            int unmapReturn = munmap(shared->sharedMemory, size);
             if (unmapReturn == ERROR) {
                 fprintf(stderr, "Error in unmapping memory, %s\n", strerror(errno));
             }
 
             /* close the memory file */
-            int closeMemory = close(fileDescr);
+            int closeMemory = close(shared->fileDescriptor);
             if (closeMemory == ERROR) {
                 fprintf(stderr, "Error in closing memory file, %s\n", strerror(errno));
             }
 
             /* unlink the memory file from /dev/shm/ */
-            if (shm_unlink(sharedMemoryName) == ERROR) {
+            if (shm_unlink(shared->sharedMemoryName) == ERROR) {
                 fprintf(stderr, "Error in unlinking memory file, %s\n", strerror(errno));
             }
 
-            sharedMemory = NULL;
+            shared->sharedMemory = NULL;
         }
     }
 }
