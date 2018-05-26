@@ -32,9 +32,10 @@ typedef struct sharedmem {
     int fileDescriptor;
     int* sharedMemory;
     char sharedMemoryName[NAMELLENGTH];
+    size_t size;
 } sharedmem;
 
 semaphores getSemaphores(size_t size);
 sharedmem getSharedMem(size_t size);
-void removeRessources(size_t size, semaphores* sems, sharedmem* shared);
+void removeRessources(semaphores* sems, sharedmem* shared);
 #endif //SHARED_MEMORY_SHAREDMEMORY_H

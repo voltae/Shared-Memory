@@ -30,7 +30,7 @@ void print_usage(void) {
 void BailOut(const char* message, semaphores* sems, sharedmem* shared) {
     if (message != NULL) {
         fprintf(stderr, "%s: %s\n", szCommand, message);
-        removeRessources(buffersize, sems, shared);
+        removeRessources(sems, shared);
         exit(EXIT_FAILURE);
     }
 }
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
     }
 
     /* unmap the memory */
-    removeRessources(buffersize, &sems, &mem);
+    removeRessources(&sems, &mem);
 
     return EXIT_SUCCESS;
 }

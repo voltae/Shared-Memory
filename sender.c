@@ -122,7 +122,7 @@ void print_usage(const char* porgramName) {
  * Since we are in the sender process, we are responsable for allocating all ressources,
  */
 void bailOut(const char* programName, const char* message, size_t size, semaphores* sems, sharedmem* shared) {
-    removeRessources(size, sems, shared);
+    removeRessources(sems, shared);
     if (message != NULL)
         fprintf(stderr, "%s: %s\n", programName, message);
     exit(EXIT_FAILURE);

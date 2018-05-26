@@ -47,6 +47,8 @@ sharedmem getSharedMem(size_t size) {
     sharedmem shared;
     int protection = PROT_WRITE;
 
+    shared.size = size;
+
     int uid = getuid();  // These functions are always successful. man7
     snprintf(shared.sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
 
@@ -84,7 +86,7 @@ sharedmem getSharedMem(size_t size) {
     return shared;
 }
 
-void removeRessources(size_t size, semaphores* sems, sharedmem* shared) {
+void removeRessources(semaphores* sems, sharedmem* shared) {
     if(sems != NULL){
         if (sems->readSemaphore != NULL) {
             /* close the read semaphore */
@@ -124,7 +126,7 @@ void removeRessources(size_t size, semaphores* sems, sharedmem* shared) {
         if (shared->sharedMemory != NULL) {
             /* unmap the memory */
             /* TODO: unmap fails every time, but the memory is deleted */
-            int unmapReturn = munmap(shared->sharedMemory, size);
+            int unmapReturn = munmap(shared->sharedMemory, shared->size);
             if (unmapReturn == ERROR) {
                 fprintf(stderr, "Error in unmapping memory, %s\n", strerror(errno));
             }
