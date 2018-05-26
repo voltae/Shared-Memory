@@ -7,9 +7,6 @@
 /* Global constant semaphore read */
 static char sharedMemoryName[NAMELLENGTH];     // Shared memory name
 
-static sem_t* readSemaphore;
-static sem_t* writeSemaphore;
-
 static int* sharedMemory;
 static int fileDescr;
 
@@ -21,12 +18,12 @@ semaphores getSemaphores(size_t size) {
     snprintf(sems.readSemaphoreName, NAMELLENGTH, "/sem_%d", 1000 * uid + 0);
     snprintf(sems.writeSemaphoreName, NAMELLENGTH, "/sem_%d", 1000 * uid + 1);
 
-    readSemaphore = sem_open(sems.readSemaphoreName, O_CREAT | O_EXCL, S_IRWXU, 0);
-    if (readSemaphore == SEM_FAILED) {
+    sems.readSemaphore = sem_open(sems.readSemaphoreName, O_CREAT | O_EXCL, S_IRWXU, 0);
+    if (sems.readSemaphore == SEM_FAILED) {
         if (errno == EEXIST)   //This is ok, someone else created our semaphores for us. How nice!
-            readSemaphore = sem_open(sems.readSemaphoreName, O_RDWR, 0);
+            sems.readSemaphore = sem_open(sems.readSemaphoreName, O_RDWR, 0);
 
-        if (readSemaphore == SEM_FAILED) {   //either from the first or from the second sem_open call.
+        if (sems.readSemaphore == SEM_FAILED) {   //either from the first or from the second sem_open call.
             fprintf(stderr, "Sender: Error in creating read-semaphore, %s\n", strerror(errno));
             sems.readSemaphore = NULL;
             sems.writeSemaphore = NULL;
@@ -34,12 +31,12 @@ semaphores getSemaphores(size_t size) {
         }
     }
 
-    writeSemaphore = sem_open(sems.writeSemaphoreName, O_CREAT | O_EXCL, S_IRWXU, size);
-    if (writeSemaphore == SEM_FAILED) {
+    sems.writeSemaphore = sem_open(sems.writeSemaphoreName, O_CREAT | O_EXCL, S_IRWXU, size);
+    if (sems.writeSemaphore == SEM_FAILED) {
         if (errno == EEXIST) {
-            writeSemaphore = sem_open(sems.writeSemaphoreName, O_RDWR, 0);
+            sems.writeSemaphore = sem_open(sems.writeSemaphoreName, O_RDWR, 0);
         }
-        if (writeSemaphore == SEM_FAILED) {
+        if (sems.writeSemaphore == SEM_FAILED) {
             /* Error message */
             fprintf(stderr, "Sender: Error in creating write-semaphore, %s\n", strerror(errno));
             sems.readSemaphore = NULL;
@@ -48,8 +45,6 @@ semaphores getSemaphores(size_t size) {
         }
     }
 
-    sems.readSemaphore = readSemaphore;
-    sems.writeSemaphore = writeSemaphore;
     return sems;
 }
 
@@ -99,10 +94,10 @@ sharedmem getSharedMem(size_t size) {
 
 void removeRessources(size_t size, semaphores* sems, sharedmem* shared) {
     if(sems != NULL){
-        if (readSemaphore != NULL) {
+        if (sems->readSemaphore != NULL) {
             /* close the read semaphore */
             int semaphore_read_close;
-            semaphore_read_close = sem_close(readSemaphore);
+            semaphore_read_close = sem_close(sems->readSemaphore);
             if (semaphore_read_close == -1) {
                 fprintf(stderr, "Error in closing read semaphore, %s\n", strerror(errno));
             }
@@ -113,12 +108,12 @@ void removeRessources(size_t size, semaphores* sems, sharedmem* shared) {
             if (semaphore_read_unlink == -1) {
                 fprintf(stderr, "Error in unlinking read semaphore: %s\n", strerror(errno));
             }
-            readSemaphore = NULL;
+            sems->readSemaphore = NULL;
         }
 
-        if (writeSemaphore != NULL) {
+        if (sems->writeSemaphore != NULL) {
             /* close the write semaphore */
-            int semaphore_write_close = sem_close(writeSemaphore);
+            int semaphore_write_close = sem_close(sems->writeSemaphore);
             if (semaphore_write_close == -1) {
                 fprintf(stderr, "Error in closing write semaphore, %s\n", strerror(errno));
             }
@@ -129,7 +124,7 @@ void removeRessources(size_t size, semaphores* sems, sharedmem* shared) {
             if (semaphore_write_unlink == -1) {
                 fprintf(stderr, "Error in unlinking write semaphore , %s\n", strerror(errno));
             }
-            writeSemaphore = NULL;
+            sems->writeSemaphore = NULL;
         }
     }
 
