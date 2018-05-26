@@ -24,6 +24,8 @@
 typedef struct semaphores{
     sem_t* readSemaphore;
     sem_t* writeSemaphore;
+    char readSemaphoreName[NAMELLENGTH];
+    char writeSemaphoreName[NAMELLENGTH];
 } semaphores;
 
 typedef struct sharedmem {
@@ -33,5 +35,5 @@ typedef struct sharedmem {
 
 semaphores getSemaphores(size_t size);
 sharedmem getSharedMem(size_t size);
-void removeRessources (size_t size);
+void removeRessources(size_t size, semaphores* sems, sharedmem* shared);
 #endif //SHARED_MEMORY_SHAREDMEMORY_H

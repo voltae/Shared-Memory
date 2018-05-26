@@ -4,7 +4,7 @@
 #include "sharedMemory.h"
 
 
-static void BailOut(const char* message);
+static void BailOut(const char* message, semaphores* sems, sharedmem* shared);
 
 /* Number of read processes */
 static size_t r;
@@ -27,10 +27,10 @@ void print_usage(void) {
 /* Report Error and free resources
  * Since we are in the receiver process, we are responsable for removing all resources, even in the error case
  */
-void BailOut(const char* message) {
+void BailOut(const char* message, semaphores* sems, sharedmem* shared) {
     if (message != NULL) {
         fprintf(stderr, "%s: %s\n", szCommand, message);
-        removeRessources(buffersize);
+        removeRessources(buffersize, sems, shared);
         exit(EXIT_FAILURE);
     }
 }
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
     /* open the semaphores */
     sems = getSemaphores(buffersize);
     if (sems.readSemaphore == NULL || sems.writeSemaphore == NULL) {
-        BailOut("Could not create Semaphore");
+        BailOut("Could not create Semaphore", &sems, NULL);
     }
 
     // initialize the reading int for the shared memory
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
     /* open the shared memory */
     mem = getSharedMem(buffersize);
     if (mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
-        BailOut("Could not create sharedmemory");
+        BailOut("Could not create sharedmemory", &sems, &mem);
     /* Semaphore wait process */
 
     r = 0;
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
         int semaphoreWait = sem_wait(sems.readSemaphore);
         if (semaphoreWait == ERROR) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
-            BailOut("Could not wait for Semaphore");
+            BailOut("Could not wait for Semaphore", &sems, &mem);
         }
         /* read a char from shared memory */
         readingInt = mem.sharedMemory[r];
@@ -133,12 +133,12 @@ int main(int argc, char** argv) {
 
         if (retval == ERROR) {
             fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
-            BailOut("Could not post for Semaphore");
+            BailOut("Could not post for Semaphore", &sems, &mem);
         }
     }
 
     /* unmap the memory */
-    removeRessources(buffersize);
+    removeRessources(buffersize, &sems, &mem);
 
     return EXIT_SUCCESS;
 }

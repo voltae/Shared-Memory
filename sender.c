@@ -6,7 +6,7 @@
 
 static size_t readParameters(int argc, char* const argv[]);
 
-static void bailOut(const char* programName, const char* message, size_t size);
+static void bailOut(const char* programName, const char* message, size_t size, semaphores* sems, sharedmem* shared);
 
 void print_usage(const char* porgramName);
 
@@ -27,12 +27,12 @@ int main(int argc, char* argv[]) {
     /* Semaphores */
     sems = getSemaphores(buffersize);
     if(sems.readSemaphore == NULL && sems.writeSemaphore == NULL)
-        bailOut(argv[0], "Could not create semaphore", buffersize);
+        bailOut(argv[0], "Could not create semaphore", buffersize, &sems, NULL);
 
     /* Sharedmemory */
     mem = getSharedMem(buffersize);
     if(mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
-        bailOut(argv[0], "Could not create sharedmemory", buffersize);
+        bailOut(argv[0], "Could not create sharedmemory", buffersize, &sems, &mem);
 
     /* read from stdin and write to shared memory */
     while ((readingInt = fgetc(stdin)) != EOF) {
@@ -40,20 +40,20 @@ int main(int argc, char* argv[]) {
         int semaphoreWait = sem_wait(sems.writeSemaphore);
         if (semaphoreWait == ERROR) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
-            bailOut(argv[0], "Could not wait for Semaphore", buffersize);
+            bailOut(argv[0], "Could not wait for Semaphore", buffersize, &sems, &mem);
         }
         /* write a char to shared memory */
         //mem.sharedMemory[sharedMemoryIndex] = readingInt;
         // using memcpy instead of direct
         if (memcpy((mem.sharedMemory + sharedMemoryIndex), &readingInt, 1) == NULL)
         {
-            bailOut(argv[0], "Could not write ot memory", buffersize);
+            bailOut(argv[0], "Could not write ot memory", buffersize, &sems, &mem);
         }
 
         int retval = sem_post(sems.readSemaphore);
         if (retval == ERROR) {
             fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
-            bailOut(argv[0], "Could not post for Semaphore", buffersize);
+            bailOut(argv[0], "Could not post for Semaphore", buffersize, &sems, &mem);
         }
         // increment the counter
         sharedMemoryIndex = (sharedMemoryIndex + 1) % buffersize;
@@ -121,8 +121,8 @@ void print_usage(const char* porgramName) {
 /* Report Error and allocate ressources
  * Since we are in the sender process, we are responsable for allocating all ressources,
  */
-void bailOut(const char* programName, const char* message, size_t size) {
-    removeRessources (size);
+void bailOut(const char* programName, const char* message, size_t size, semaphores* sems, sharedmem* shared) {
+    removeRessources(size, sems, shared);
     if (message != NULL)
         fprintf(stderr, "%s: %s\n", programName, message);
     exit(EXIT_FAILURE);
