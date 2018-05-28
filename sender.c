@@ -2,6 +2,7 @@
 // Created by marcaurel on 11.05.18.
 //
 
+#include <stdbool.h>
 #include "sharedMemory.h"
 
 static size_t readParameters(int argc, char* const argv[]);
@@ -20,6 +21,7 @@ int main(int argc, char* argv[]) {
     sharedmem mem;
     unsigned int sharedMemoryIndex = 0;
     int readingInt;
+    bool read = true;
 
     /* Parameters */
     size_t buffersize = readParameters(argc, argv);
@@ -35,7 +37,10 @@ int main(int argc, char* argv[]) {
         bailOut(argv[0], "Could not create sharedmemory", &sems, &mem);
 
     /* read from stdin and write to shared memory */
-    while ((readingInt = fgetc(stdin)) != EOF) {
+
+    do  {
+        if ((readingInt = fgetc(stdin)) == EOF)
+            read = false;
         // write index is the same as the read index. writer must wait
         int semaphoreWait = sem_wait(sems.writeSemaphore);
         if (semaphoreWait == ERROR) {
@@ -57,11 +62,7 @@ int main(int argc, char* argv[]) {
         }
         // increment the counter
         sharedMemoryIndex = (sharedMemoryIndex + 1) % buffersize;
-    }
-
-    /* Send EOF to the receiver. We are done. */
-    mem.sharedMemory[sharedMemoryIndex] = EOF;
-    sem_post(sems.readSemaphore);
+    } while (read);
 
     return EXIT_SUCCESS;
 }
