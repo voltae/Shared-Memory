@@ -8,8 +8,9 @@ The sender process reads chars forn **stdin** and sends these through the ringbu
 As soon as the sender reads **EOF** from **stdin**, it signalizes this to the ringbuffer to terminate the receiver and terminates them self.
 
 ## TODO:
-* Signal handling should be implemented
-* if the parameter after -m is too high, it should output an error message.
-* EOF Handling don't work properly
-* we **pass the 10 Test completely**
-* the 11 Test we get the error: _Error in creating read-semaphore, No such file or directory_ 
+- [] Signal handling should be implemented
+- [x] <del>if the parameter after -m is too high, it should output an error message.</del>
+- [x] EOF Handling don't work properly, testetd with custom EOF, this seams not to be the problem.
+- [x] <del>we pass the 10 Test completely </del>
+- [x] <del>the 11 Test we get the error: _Error in creating read-semaphore, No such file or directory_ </del>
+

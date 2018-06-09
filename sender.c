@@ -2,7 +2,7 @@
 // Created by marcaurel on 11.05.18.
 //
 
-#include <stdbool.h>
+
 #include "sharedMemory.h"
 
 static size_t readParameters(int argc, char* const argv[]);

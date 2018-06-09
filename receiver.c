@@ -6,12 +6,6 @@
 
 static void BailOut(const char* message, semaphores* sems, sharedmem* shared);
 
-/* Number of read processes */
-static size_t r;
-
-/* size of resources */
-size_t buffersize = 0;
-
 static const char* szCommand = "<not yet set>";
 
 /* Global constant for shared memory */
@@ -36,7 +30,7 @@ void BailOut(const char* message, semaphores* sems, sharedmem* shared) {
 }
 /* size_t = unsigned long typedef stddef. */
 size_t checkCommand(int argc, char** argv) {
-    /* store the progam name */
+    /* store the program name */
     szCommand = argv[0];
 
     int opt;    // option for getop
@@ -90,6 +84,12 @@ size_t checkCommand(int argc, char** argv) {
 int main(int argc, char** argv) {
     semaphores sems;
     sharedmem mem;
+
+    /* buffer size allocated, stackvariable */
+    size_t buffersize = 0;
+
+    /* Number of read processes, stack variable */
+    size_t r;
     /* check if no paramters are given */
     buffersize = checkCommand(argc, argv);
 
@@ -109,23 +109,17 @@ int main(int argc, char** argv) {
     /* Semaphore wait process */
 
     r = 0;
-    while (1) {
+
+    /* read a char from shared memory */
+    while ((readingInt = mem.sharedMemory[r]) != EOF) {
         // write index is the same as the read index. writer must wait
         int semaphoreWait = sem_wait(sems.readSemaphore);
         if (semaphoreWait == ERROR) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
             BailOut("Could not wait for Semaphore", &sems, &mem);
         }
-        /* read a char from shared memory */
-        readingInt = mem.sharedMemory[r];
-
-        /* is end of file detected? */
-        if (readingInt == EOF) {
-            break;
-        }
 
         // print out the char to stdout
-
         fputc(readingInt, stdout);
         int retval = sem_post(sems.writeSemaphore);
         // increment the counter

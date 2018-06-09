@@ -16,6 +16,7 @@
 #include <errno.h>      // for errno global constant
 #include <string.h>     // for strerror
 #include <assert.h>
+#include <stdbool.h>
 
 
 #define NAMELLENGTH 14
