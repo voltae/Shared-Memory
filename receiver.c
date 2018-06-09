@@ -89,8 +89,8 @@ int main(int argc, char** argv) {
     size_t buffersize = 0;
 
     /* Number of read processes, stack variable */
-    size_t r;
-    /* check if no paramters are given */
+    size_t readingIndex;
+    /* check if no parameters are given */
     buffersize = checkCommand(argc, argv);
 
     /* open the semaphores */
@@ -108,10 +108,11 @@ int main(int argc, char** argv) {
         BailOut("Could not create sharedmemory", &sems, &mem);
     /* Semaphore wait process */
 
-    r = 0;
+    readingIndex = 0;
 
     /* read a char from shared memory */
-    while ((readingInt = mem.sharedMemory[r]) != EOF) {
+
+    while ((readingInt = mem.sharedMemory[readingIndex]) != EOF) {
         // write index is the same as the read index. writer must wait
         int semaphoreWait = sem_wait(sems.readSemaphore);
         if (semaphoreWait == ERROR) {
@@ -123,7 +124,7 @@ int main(int argc, char** argv) {
         fputc(readingInt, stdout);
         int retval = sem_post(sems.writeSemaphore);
         // increment the counter
-        r = (r + 1) % buffersize;
+        readingIndex = (readingIndex + 1) % buffersize;
 
         if (retval == ERROR) {
             fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
