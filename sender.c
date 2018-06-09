@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
     /* read from stdin and write to shared memory */
 
     do  {
+
         if ((readingInt = fgetc(stdin)) == EOF)
             read = false;
         // write index is the same as the read index. writer must wait
@@ -48,12 +49,7 @@ int main(int argc, char* argv[]) {
             bailOut(argv[0], "Could not wait for Semaphore", &sems, &mem);
         }
         /* write a char to shared memory */
-        //mem.sharedMemory[sharedMemoryIndex] = readingInt;
-        // using memcpy instead of direct
-        if (memcpy((mem.sharedMemory + sharedMemoryIndex), &readingInt, 1) == NULL)
-        {
-            bailOut(argv[0], "Could not write ot memory", &sems, &mem);
-        }
+        mem.sharedMemory[sharedMemoryIndex] = readingInt;
 
         int retval = sem_post(sems.readSemaphore);
         if (retval == ERROR) {
