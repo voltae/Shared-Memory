@@ -4,42 +4,47 @@
 
 #include "sharedMemory.h"
 
-//TODO: rewrite into one errorhandling path
+static bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaphore);
+
 semaphores getSemaphores(size_t size) {
     semaphores sems;
+    bool error = false;
 
-    int uid = getuid();  // These functions are always successful. man7
+    int uid = getuid();  // This function is always successful according to the manpage
     snprintf(sems.readSemaphoreName, NAMELLENGTH, "/sem_%d", 1000 * uid + 0);
     snprintf(sems.writeSemaphoreName, NAMELLENGTH, "/sem_%d", 1000 * uid + 1);
 
-    sems.readSemaphore = sem_open(sems.readSemaphoreName, O_CREAT | O_EXCL, S_IRWXU, 0);
-    if (sems.readSemaphore == SEM_FAILED) {
-        if (errno == EEXIST)   //This is ok, someone else created our semaphores for us. How nice!
-            sems.readSemaphore = sem_open(sems.readSemaphoreName, O_RDWR, 0);
+    if (!tryCreateSemaphores(sems.readSemaphoreName, 0, &sems.readSemaphore))
+        error = true;
 
-        if (sems.readSemaphore == SEM_FAILED) {   //either from the first or from the second sem_open call.
-            fprintf(stderr, "Sender: Error in creating read-semaphore, %s\n", strerror(errno));
-            sems.readSemaphore = NULL;
-            sems.writeSemaphore = NULL;
-            return sems;
-        }
+    if (!error) {
+        if (!tryCreateSemaphores(sems.writeSemaphoreName, size, &sems.writeSemaphore))
+            error = true;
     }
 
-    sems.writeSemaphore = sem_open(sems.writeSemaphoreName, O_CREAT | O_EXCL, S_IRWXU, size);
-    if (sems.writeSemaphore == SEM_FAILED) {
-        if (errno == EEXIST) {
-            sems.writeSemaphore = sem_open(sems.writeSemaphoreName, O_RDWR, 0);
-        }
-        if (sems.writeSemaphore == SEM_FAILED) {
-            /* Error message */
-            fprintf(stderr, "Sender: Error in creating write-semaphore, %s\n", strerror(errno));
-            sems.readSemaphore = NULL;
-            sems.writeSemaphore = NULL;
-            return sems;
-        }
+    if (error) {
+        sems.readSemaphore = NULL;
+        sems.writeSemaphore = NULL;
     }
 
     return sems;
+}
+
+bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaphore) {
+    bool ret = true;
+
+    *semaphore = sem_open(semaphoreName, O_CREAT | O_EXCL, S_IRWXU, size);
+    if (*semaphore == SEM_FAILED) {
+        if (errno == EEXIST)   //This is ok, someone else created our semaphore for us. How nice!
+            *semaphore = sem_open(semaphoreName, O_RDWR, 0);
+
+        if (*semaphore == SEM_FAILED) { //either from the first or from the second sem_open call.
+            fprintf(stderr, "Sender: Error creating %s, %s\n", semaphoreName, strerror(errno));
+            ret = false;
+        }
+    }
+
+    return ret;
 }
 
 //TODO: rewrite to single error path
@@ -87,7 +92,7 @@ sharedmem getSharedMem(size_t size) {
 }
 
 void removeRessources(semaphores* sems, sharedmem* shared) {
-    if(sems != NULL){
+    if (sems != NULL) {
         if (sems->readSemaphore != NULL) {
             /* close the read semaphore */
             int semaphore_read_close;
