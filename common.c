@@ -6,28 +6,18 @@
 
 static bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaphore);
 
-semaphores getSemaphores(size_t size) {
-    semaphores sems;
-    bool error = false;
+bool getSemaphores(size_t size, semaphores* sems) {
+    bool ret = true;
 
     int uid = getuid();  // This function is always successful according to the manpage
-    snprintf(sems.readSemaphoreName, NAMELLENGTH, "/sem_%d", 1000 * uid + 0);
-    snprintf(sems.writeSemaphoreName, NAMELLENGTH, "/sem_%d", 1000 * uid + 1);
+    snprintf(sems->readSemaphoreName, NAMELLENGTH, "/sem_%d", 1000 * uid + 0);
+    snprintf(sems->writeSemaphoreName, NAMELLENGTH, "/sem_%d", 1000 * uid + 1);
 
-    if (!tryCreateSemaphores(sems.readSemaphoreName, 0, &sems.readSemaphore))
-        error = true;
+    ret = tryCreateSemaphores(sems->readSemaphoreName, 0, &sems->readSemaphore);
 
-    if (!error) {
-        if (!tryCreateSemaphores(sems.writeSemaphoreName, size, &sems.writeSemaphore))
-            error = true;
-    }
+    ret = ret && tryCreateSemaphores(sems->writeSemaphoreName, size, &sems->writeSemaphore);
 
-    if (error) {
-        sems.readSemaphore = NULL;
-        sems.writeSemaphore = NULL;
-    }
-
-    return sems;
+    return ret;
 }
 
 bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaphore) {

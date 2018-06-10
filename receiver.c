@@ -90,8 +90,7 @@ int main(int argc, char** argv) {
     buffersize = checkCommand(argc, argv);
 
     /* open the semaphores */
-    sems = getSemaphores(buffersize);
-    if (sems.readSemaphore == NULL || sems.writeSemaphore == NULL) {
+    if (!getSemaphores(buffersize, &sems)) {
         BailOut("Could not create Semaphore", argv[0], &sems, NULL);
     }
 

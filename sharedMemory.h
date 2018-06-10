@@ -36,7 +36,7 @@ typedef struct sharedmem {
     size_t size;
 } sharedmem;
 
-semaphores getSemaphores(size_t size);
+bool getSemaphores(size_t size, semaphores* sems);
 sharedmem getSharedMem(size_t size);
 void removeRessources(semaphores* sems, sharedmem* shared);
 #endif //SHARED_MEMORY_SHAREDMEMORY_H

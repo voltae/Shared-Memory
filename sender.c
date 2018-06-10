@@ -26,8 +26,7 @@ int main(int argc, char* argv[]) {
     size_t buffersize = readParameters(argc, argv);
 
     /* Semaphores */
-    sems = getSemaphores(buffersize);
-    if (sems.readSemaphore == NULL && sems.writeSemaphore == NULL)
+    if (!getSemaphores(buffersize, &sems))
         bailOut(argv[0], "Could not create semaphore", &sems, NULL);
 
     /* Sharedmemory */
