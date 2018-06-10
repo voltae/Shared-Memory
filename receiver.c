@@ -100,8 +100,6 @@ int main(int argc, char** argv) {
     if (mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
         BailOut("Could not create sharedmemory",argv[0], &sems, &mem);
 
-    /* read a char from shared memory */
-    readingInt = mem.sharedMemory[readingIndex];
     while (readingInt != EOF) {
         // write index is the same as the read index. writer must wait
         int semaphoreWait = sem_wait(sems.readSemaphore);
@@ -109,19 +107,22 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
             BailOut("Could not wait for Semaphore",argv[0], &sems, &mem);
         }
-
+        /* read the next character from buffer for the next iteration */
+        readingInt = mem.sharedMemory[readingIndex];
         // print out the char to stdout
-        fputc(readingInt, stdout);
+        if(readingInt != EOF)
+            fputc(readingInt, stdout);
+
+        /* increment the buffer counter */
+        readingIndex = (readingIndex + 1) % buffersize;
+
         int retval = sem_post(sems.writeSemaphore);
         // increment the counter
         if (retval == ERROR) {
             fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
             BailOut("Could not post for Semaphore",argv[0], &sems, &mem);
         }
-        /* increment the buffer counter */
-        readingIndex = (readingIndex + 1) % buffersize;
-        /* read the next character from buffer for the next iteration */
-        readingInt = mem.sharedMemory[readingIndex];
+
     }
 
     /* unmap the memory */
