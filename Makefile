@@ -46,29 +46,22 @@ receiver: $(OBJECTS_RECEIVER) $(OBJECTS_COMMON)
 sender: $(OBJECTS_SENDER) $(OBJECTS_COMMON)
 	$(CC) $(CFLAGS) $(OBJECTS_SENDER) $(OBJECTS_COMMON) $(HEADER) -o$@ $(LDLIBS)
 
-#runs the test on annuminas
+# runs the test on annuminas
 runtest: receiver sender
 	test_sender_empfaenger.sh -s./sender -e./receiver -f
 
-# Target testsimple
-# TODO: Remove on submission
-testsimple: sender_simple receiver_simple
-
-sender_simple: sender_simple.c
-	$(CC) $< -o$@ $(LDLIBS)
-receiver_simple: receiver_simple.c
-	$(CC) $< -o$@ $(LDLIBS)
+# remove the object files
 .PHONY: clean
-
 clean:
 	rm -f *.o
 
+.PHONY: deleteResources
 #delete the semaphores and shared memory from /dev/shm/ with the naming from the description
 deleteResources:
 	rm /dev/shm/sem.sem_$(ID)* /dev/shm/shm_$(ID)*
 
 .PHONY: distclean
-
+# remove the documentation folder
 distclean: clean
 	$(RM) -rf doc
 
@@ -76,7 +69,6 @@ distclean: clean
 doc: html pdf
 
 .PHONY: html
-
 # create html version of documentation
 html:
 	$(DOXYGEN) doxygen.dcf
