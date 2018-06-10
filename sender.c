@@ -27,33 +27,30 @@ int main(int argc, char* argv[]) {
 
     /* Semaphores */
     sems = getSemaphores(buffersize);
-    if(sems.readSemaphore == NULL && sems.writeSemaphore == NULL)
+    if (sems.readSemaphore == NULL && sems.writeSemaphore == NULL)
         bailOut(argv[0], "Could not create semaphore", &sems, NULL);
 
     /* Sharedmemory */
     mem = getSharedMem(buffersize);
-    if(mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
+    if (mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
         bailOut(argv[0], "Could not create sharedmemory", &sems, &mem);
 
     /* read from stdin and write to shared memory */
-
-    do  {
+    do {
         readingInt = fgetc(stdin);
 
         // write index is the same as the read index. writer must wait
         int semaphoreWait = sem_wait(sems.writeSemaphore);
-        if (semaphoreWait == ERROR) {
-            fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
+        if (semaphoreWait == ERROR)
             bailOut(argv[0], "Could not wait for Semaphore", &sems, &mem);
-        }
+
         /* write a char to shared memory */
         mem.sharedMemory[sharedMemoryIndex] = readingInt;
 
         int retval = sem_post(sems.readSemaphore);
-        if (retval == ERROR) {
-            fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
+        if (retval == ERROR)
             bailOut(argv[0], "Could not post for Semaphore", &sems, &mem);
-        }
+
         // increment the counter
         sharedMemoryIndex = (sharedMemoryIndex + 1) % buffersize;
     } while (readingInt != EOF);
