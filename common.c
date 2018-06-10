@@ -50,10 +50,10 @@ sharedmem getSharedMem(size_t size) {
     // initialize shared memory
     shared.fileDescriptor = shm_open(shared.sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
     if (shared.fileDescriptor == ERROR) {
-        if (errno == EEXIST)
+        if (errno == EEXIST)    //This is fine, someone else created our shared memory for us. How nice!
             shared.fileDescriptor = shm_open(shared.sharedMemoryName, O_RDWR, 0);
 
-        if (shared.fileDescriptor == ERROR) {
+        if (shared.fileDescriptor == ERROR) { //either from the first or from the second shm_open call.
             fprintf(stderr, "Error in opening shared memory, %s\n", strerror(errno));
             shared.sharedMemory = NULL;
             shared.fileDescriptor = 0;
