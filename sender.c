@@ -19,9 +19,8 @@ void print_usage(const char* porgramName);
 int main(int argc, char* argv[]) {
     semaphores sems;
     sharedmem mem;
-    unsigned int sharedMemoryIndex = 0;
+    size_t sharedMemoryIndex = 0;
     int readingInt;
-    bool read = true;
 
     /* Parameters */
     size_t buffersize = readParameters(argc, argv);
@@ -39,9 +38,8 @@ int main(int argc, char* argv[]) {
     /* read from stdin and write to shared memory */
 
     do  {
+        readingInt = fgetc(stdin);
 
-        if ((readingInt = fgetc(stdin)) == EOF)
-            read = false;
         // write index is the same as the read index. writer must wait
         int semaphoreWait = sem_wait(sems.writeSemaphore);
         if (semaphoreWait == ERROR) {
@@ -58,7 +56,7 @@ int main(int argc, char* argv[]) {
         }
         // increment the counter
         sharedMemoryIndex = (sharedMemoryIndex + 1) % buffersize;
-    } while (read);
+    } while (readingInt != EOF);
 
     return EXIT_SUCCESS;
 }
