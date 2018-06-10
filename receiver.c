@@ -4,35 +4,28 @@
 #include "sharedMemory.h"
 
 
-static void BailOut(const char* message, semaphores* sems, sharedmem* shared);
-
-static const char* szCommand = "<not yet set>";
-
-/* Global constant for shared memory */
+static void BailOut(const char* progname, const char* message, semaphores* sems, sharedmem* shared);
 // file descriptor for the shared memory (is stored on disk "/dev/shm")
 // the linked memory address in current address space
 
 /* Report Error and free resources */
-void print_usage(void) {
-    fprintf(stderr, "USAGE: %s [-m] length\n", szCommand);
+void print_usage(const char *progname) {
+    fprintf(stderr, "USAGE: %s [-m] length\n", progname);
     exit(EXIT_FAILURE);
 }
 
 /* Report Error and free resources
  * Since we are in the receiver process, we are responsable for removing all resources, even in the error case
  */
-void BailOut(const char* message, semaphores* sems, sharedmem* shared) {
+void BailOut(const char* progname, const char* message, semaphores* sems, sharedmem* shared) {
     if (message != NULL) {
-        fprintf(stderr, "%s: %s\n", szCommand, message);
+        fprintf(stderr, "%s: %s\n", progname, message);
         removeRessources(sems, shared);
         exit(EXIT_FAILURE);
     }
 }
 /* size_t = unsigned long typedef stddef. */
 size_t checkCommand(int argc, char** argv) {
-    /* store the program name */
-    szCommand = argv[0];
-
     int opt;    // option for getop
     int bOptionM = 0;   // Flag for the 'm' option
     int bError = 0;     // Flag for Option Error
@@ -40,7 +33,7 @@ size_t checkCommand(int argc, char** argv) {
     char* stringInt = NULL;
 
     if (argc < 2) {
-        print_usage();
+        print_usage(argv[0]);
     }
     // check operants with getopt(3)
     while ((opt = getopt(argc, argv, "m:")) != -1) {
@@ -65,17 +58,17 @@ size_t checkCommand(int argc, char** argv) {
 
     if (optopt == 'm')    /* parameter 'm' with no argument */
     {
-        print_usage();
+        print_usage(argv[0]);
     }
 
     if (bError) {
-        print_usage();
+        print_usage(argv[0]);
     }
     if (argc != optind) {
-        print_usage();
+        print_usage(argv[0]);
     }
     if ((errno == ERANGE) || (strcmp(stringInt, "\0") != 0) || (bufferTemp == 0) || (bufferTemp >> 29)) {
-        print_usage();
+        print_usage(argv[0]);
     }
 
     return (size_t)bufferTemp;
@@ -89,47 +82,46 @@ int main(int argc, char** argv) {
     size_t buffersize = 0;
 
     /* Number of read processes, stack variable */
-    size_t readingIndex;
+    size_t readingIndex = 0;
+    // initialize the reading int for the shared memory
+    int readingInt = 0;
+
     /* check if no parameters are given */
     buffersize = checkCommand(argc, argv);
 
     /* open the semaphores */
     sems = getSemaphores(buffersize);
     if (sems.readSemaphore == NULL || sems.writeSemaphore == NULL) {
-        BailOut("Could not create Semaphore", &sems, NULL);
+        BailOut("Could not create Semaphore", argv[0], &sems, NULL);
     }
-
-    // initialize the reading int for the shared memory
-    int readingInt;
 
     /* open the shared memory */
     mem = getSharedMem(buffersize);
     if (mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
-        BailOut("Could not create sharedmemory", &sems, &mem);
-    /* Semaphore wait process */
-
-    readingIndex = 0;
+        BailOut("Could not create sharedmemory",argv[0], &sems, &mem);
 
     /* read a char from shared memory */
-
-    while ((readingInt = mem.sharedMemory[readingIndex]) != EOF) {
+    readingInt = mem.sharedMemory[readingIndex];
+    while (readingInt != EOF) {
         // write index is the same as the read index. writer must wait
         int semaphoreWait = sem_wait(sems.readSemaphore);
         if (semaphoreWait == ERROR) {
             fprintf(stderr, "Error in waiting semaphore, %s\n", strerror(errno));
-            BailOut("Could not wait for Semaphore", &sems, &mem);
+            BailOut("Could not wait for Semaphore",argv[0], &sems, &mem);
         }
 
         // print out the char to stdout
         fputc(readingInt, stdout);
         int retval = sem_post(sems.writeSemaphore);
         // increment the counter
-        readingIndex = (readingIndex + 1) % buffersize;
-
         if (retval == ERROR) {
             fprintf(stderr, "Error in posting semaphore, %s\n", strerror(errno));
-            BailOut("Could not post for Semaphore", &sems, &mem);
+            BailOut("Could not post for Semaphore",argv[0], &sems, &mem);
         }
+        /* increment the buffer counter */
+        readingIndex = (readingIndex + 1) % buffersize;
+        /* read the next character from buffer for the next iteration */
+        readingInt = mem.sharedMemory[readingIndex];
     }
 
     /* unmap the memory */
