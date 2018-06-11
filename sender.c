@@ -5,122 +5,106 @@
 
 #include "sharedMemory.h"
 
-static size_t readParameters(int argc, char* const argv[]);
-
-static void bailOut(const char* programName, const char* message, semaphores* sems, sharedmem* shared);
-
-void print_usage(const char* porgramName);
-
+static bool readParameters(const int argc, char* const argv[], size_t* bufferSize);
+static bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize);
 
 /* Global constant for shared memory */
 // file descriptor for the shared memory (is stored on disk "/dev/shm")
 // the linked memory address in current address space
 
 int main(int argc, char* argv[]) {
-    semaphores sems;
-    sharedmem mem;
-    size_t sharedMemoryIndex = 0;
-    int readingInt;
-#ifdef DEBUG
-    fprintf(stderr, "Debug active\n");
-#endif
+    bool rc = true;
+    semaphores sems = {.writeSemaphore = NULL, .readSemaphore = NULL};
+    sharedmem mem = {.sharedMemory = NULL};
+    size_t buffersize;
+
     /* Parameters */
-    size_t buffersize = readParameters(argc, argv);
+    rc = readParameters(argc, argv, &buffersize);
 
     /* Semaphores */
-    if (!getSemaphores(buffersize, &sems))
-        bailOut(argv[0], "Could not create semaphore", &sems, NULL);
+    rc = rc && getSemaphores(buffersize, &sems);
 
     /* Sharedmemory */
-    if (!getSharedMem(buffersize, &mem))
-        bailOut(argv[0], "Could not create sharedmemory", &sems, &mem);
+    rc = rc && getSharedMem(buffersize, &mem);
 
     /* read from stdin and write to shared memory */
+    rc = rc && transcribe(&sems, &mem, buffersize);
+
+    if(!rc){
+        removeRessources(&sems, &mem);
+        fprintf(stderr, "USAGE: %s [-m] length\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    else
+        return EXIT_SUCCESS;
+}
+
+static bool readParameters(const int argc, char* const argv[], size_t* bufferSize) {
+    bool rc = true;
+    int opt;    // option for getop
+    int bOptionM = 0;   // Flag for the 'm' option
+    char* stringInt = NULL;
+
+
+    *bufferSize = 0;
+    /* check if no paramters are given */
+    if (argc < 2)
+        rc = false;
+    else{
+        while (rc && (opt = getopt(argc, argv, "m:")) != -1) {
+            switch (opt) {
+                case 'm': {
+                    if (bOptionM) { //we do not allow a second "-m"
+                        rc = false;
+                        break;
+                    }
+                    bOptionM = 1;
+                    *bufferSize = strtol(optarg, &stringInt, 10);
+                    if (strcmp(stringInt, "\0") != 0)   //non numeric leftovers in the option string is a no-no
+                        rc = false;
+                    break;
+                }
+                case '?':
+                    rc = false;
+                    break;
+                default:
+                    assert (0);   /* should never be reached */
+                    break;
+            }
+        }
+    }
+
+    //TODO: revisit. hardcoding the 29 is probably not the way to go
+    if ((argc != optind) || (errno == ERANGE) || (*bufferSize == 0) || (*bufferSize >> 29)) {
+        rc = false;
+    }
+
+    return rc;
+}
+
+bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize){
+    bool rc = true;
+    int readingInt;
+    size_t sharedMemoryIndex = 0;
+
     do {
         readingInt = fgetc(stdin);
 
         // write index is the same as the read index. writer must wait
-        int semaphoreWait = sem_wait(sems.writeSemaphore);
+        int semaphoreWait = sem_wait(sems->writeSemaphore);
         if (semaphoreWait == ERROR)
-            bailOut(argv[0], "Could not wait for Semaphore", &sems, &mem);
+            rc = false;
 
         /* write a char to shared memory */
-        mem.sharedMemory[sharedMemoryIndex] = readingInt;
+        mem->sharedMemory[sharedMemoryIndex] = readingInt;
 
-        int retval = sem_post(sems.readSemaphore);
+        int retval = sem_post(sems->readSemaphore);
         if (retval == ERROR)
-            bailOut(argv[0], "Could not post for Semaphore", &sems, &mem);
+            rc = false;
 
         // increment the counter
         sharedMemoryIndex = (sharedMemoryIndex + 1) % buffersize;
-    } while (readingInt != EOF);
+    } while (rc && readingInt != EOF);
 
-    return EXIT_SUCCESS;
-}
-
-static size_t readParameters(const int argc, char* const argv[]) {
-    int opt;    // option for getop
-    int bOptionM = 0;   // Flag for the 'm' option
-    int bError = 0;     // Flag for Option Error
-    long bufferTemp = 0;
-    char* stringInt = NULL;
-
-    /* check if no paramters are given */
-    if (argc < 2) {
-        print_usage(argv[0]);
-    }
-
-    // check operants with getopt(3)
-    while ((opt = getopt(argc, argv, "m:")) != -1) {
-        switch (opt) {
-            case 'm': {
-                if (bOptionM) {
-                    bError = 1;
-                    break;
-                }
-                bOptionM = 1;
-                bufferTemp = strtol(optarg, &stringInt, 10);
-                break;
-            }
-            case '?':
-                print_usage(argv[0]);
-                break;
-            default:
-                assert (0);   /* should never be reached */
-                break;
-        }
-    }
-
-    if (bError) {
-        print_usage(argv[0]);
-    }
-    if (argc != optind) {
-        print_usage(argv[0]);
-    }   //TODO: revisit. hardcoding the 29 is probably not the way to go
-    if ((errno == ERANGE) || (strcmp(stringInt, "\0") != 0) || (bufferTemp == 0) || (bufferTemp >> 29)) {
-        print_usage(argv[0]);
-    }
-
-    return (size_t) bufferTemp;
-}
-
-/* Report Error and free ressources */
-void print_usage(const char* porgramName) {
-    fprintf(stderr, "USAGE: %s [-m] length\n", porgramName);
-    exit(EXIT_FAILURE);
-}
-
-/* Report Error and allocate ressources
- * Since we are in the sender process, we are responsable for allocating all ressources,
- */
-void bailOut(const char* programName, const char* message, semaphores* sems, sharedmem* shared) {
-    removeRessources(sems, shared);
-#ifdef DEBUG    //proper error messages are not welcome. They are still handy for debugging.
-    if (message != NULL)
-        fprintf(stderr, "%s: %s\n", programName, message);
-#else
-    fprintf(fopen("/dev/null", "w"), "%s\n", message);  //stfu compiler
-#endif
-    fprintf(stderr, "USAGE: %s [-m] length\n", programName);
-    exit(EXIT_FAILURE);
+    return rc;
 }
