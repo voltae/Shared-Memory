@@ -29,7 +29,9 @@ bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaphore) {
             *semaphore = sem_open(semaphoreName, O_RDWR, 0);
 
         if (*semaphore == SEM_FAILED) { //either from the first or from the second sem_open call.
+#ifdef DEBUG   //proper error messages are not welcome. They are still handy for debugging.
             fprintf(stderr, "Sender: Error creating %s, %s\n", semaphoreName, strerror(errno));
+#endif
             ret = false;
         }
     }
@@ -37,48 +39,49 @@ bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaphore) {
     return ret;
 }
 
-//TODO: rewrite to single error path
-sharedmem getSharedMem(size_t size) {
-    sharedmem shared;
+bool getSharedMem(size_t size, sharedmem* shared) {
+    bool ret = true;
     int protection = PROT_WRITE;
 
-    shared.size = size;
+    shared->size = size;
 
-    int uid = getuid();  // These functions are always successful. man7
-    snprintf(shared.sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
+    int uid = getuid();  // This function is always successful according to the manpage
+    snprintf(shared->sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
 
     // initialize shared memory
-    shared.fileDescriptor = shm_open(shared.sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
-    if (shared.fileDescriptor == ERROR) {
+    shared->fileDescriptor = shm_open(shared->sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
+    if (shared->fileDescriptor == ERROR) {
         if (errno == EEXIST)    //This is fine, someone else created our shared memory for us. How nice!
-            shared.fileDescriptor = shm_open(shared.sharedMemoryName, O_RDWR, 0);
+            shared->fileDescriptor = shm_open(shared->sharedMemoryName, O_RDWR, 0);
 
-        if (shared.fileDescriptor == ERROR) { //either from the first or from the second shm_open call.
+        if (shared->fileDescriptor == ERROR) { //either from the first or from the second shm_open call.
+#ifdef DEBUG
             fprintf(stderr, "Error in opening shared memory, %s\n", strerror(errno));
-            shared.sharedMemory = NULL;
-            shared.fileDescriptor = 0;
-            return shared;
+#endif
+            ret = false;
         }
     } else {
         // fixing the shared memory to a define size (coming from the agrv)
-        int returrnVal = ftruncate(shared.fileDescriptor, size * sizeof(int));
+        int returrnVal = ftruncate(shared->fileDescriptor, size * sizeof(int));
         if (returrnVal == ERROR) {
+#ifdef DEBUG
             fprintf(stderr, "Error in truncating shared memory, %s\n", strerror(errno));
-            shared.sharedMemory = NULL;
-            shared.fileDescriptor = 0;
-            return shared;
+#endif
+            ret = false;
+        }
+    }
+    if (ret){
+        shared->sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, shared->fileDescriptor, 0);
+        if (shared->sharedMemory == MAP_FAILED) {
+#ifdef DEBUG
+            fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
+#endif
+            return false;
         }
     }
 
-    shared.sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, shared.fileDescriptor, 0);
-    if (shared.sharedMemory == MAP_FAILED) {
-        fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
-        shared.sharedMemory = NULL;
-        shared.fileDescriptor = 0;
-        return shared;
-    }
 
-    return shared;
+    return ret;
 }
 
 void removeRessources(semaphores* sems, sharedmem* shared) {

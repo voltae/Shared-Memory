@@ -95,8 +95,7 @@ int main(int argc, char** argv) {
     }
 
     /* open the shared memory */
-    mem = getSharedMem(buffersize);
-    if (mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
+    if (!getSharedMem(buffersize, &mem))
         BailOut("Could not create sharedmemory",argv[0], &sems, &mem);
 
     while (readingInt != EOF) {

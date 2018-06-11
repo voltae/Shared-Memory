@@ -21,7 +21,9 @@ int main(int argc, char* argv[]) {
     sharedmem mem;
     size_t sharedMemoryIndex = 0;
     int readingInt;
-
+#ifdef DEBUG
+    fprintf(stderr, "Debug active\n");
+#endif
     /* Parameters */
     size_t buffersize = readParameters(argc, argv);
 
@@ -30,8 +32,7 @@ int main(int argc, char* argv[]) {
         bailOut(argv[0], "Could not create semaphore", &sems, NULL);
 
     /* Sharedmemory */
-    mem = getSharedMem(buffersize);
-    if (mem.fileDescriptor == 0 || mem.sharedMemory == NULL)
+    if (!getSharedMem(buffersize, &mem))
         bailOut(argv[0], "Could not create sharedmemory", &sems, &mem);
 
     /* read from stdin and write to shared memory */
@@ -114,7 +115,12 @@ void print_usage(const char* porgramName) {
  */
 void bailOut(const char* programName, const char* message, semaphores* sems, sharedmem* shared) {
     removeRessources(sems, shared);
+#ifdef DEBUG    //proper error messages are not welcome. They are still handy for debugging.
     if (message != NULL)
         fprintf(stderr, "%s: %s\n", programName, message);
+#else
+    fprintf(fopen("/dev/null", "w"), "%s\n", message);  //stfu compiler
+#endif
+    fprintf(stderr, "USAGE: %s [-m] length\n", programName);
     exit(EXIT_FAILURE);
 }
