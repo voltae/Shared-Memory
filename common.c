@@ -70,75 +70,77 @@ bool getSharedMem(size_t size, sharedmem* shared) {
             ret = false;
         }
     }
-    if (ret){
-        shared->sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, shared->fileDescriptor, 0);
-        if (shared->sharedMemory == MAP_FAILED) {
-#ifdef DEBUG
-            fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
-#endif
-            return false;
-        }
-    }
 
+    //the shm needs to be mapped even if we ran into problems earlier or we won't have a pointer to free later.
+    shared->sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, shared->fileDescriptor, 0);
+    if (shared->sharedMemory == MAP_FAILED) {
+#ifdef DEBUG
+        fprintf(stderr, "Error in mapping memory, %s\n", strerror(errno));
+#endif
+        ret = false;
+    }
 
     return ret;
 }
 
 void removeRessources(semaphores* sems, sharedmem* shared) {
+#ifdef DEBUG
+    fprintf(stderr, "cleanup called\n");
+#endif
     if (sems != NULL) {
         if (sems->readSemaphore != NULL) {
             /* close the read semaphore */
-            int semaphore_read_close;
-            semaphore_read_close = sem_close(sems->readSemaphore);
-            if (semaphore_read_close == -1) {
-                fprintf(stderr, "Error in closing read semaphore, %s\n", strerror(errno));
+            if (sem_close(sems->readSemaphore) == 0) {   //if either of those fails... well that's really too bad.
+                sem_unlink(sems->readSemaphoreName);
+                sems->readSemaphore = NULL;
             }
-
-
-            /* unlink the read semaphore */
-            int semaphore_read_unlink = sem_unlink(sems->readSemaphoreName);
-            if (semaphore_read_unlink == -1) {
-                fprintf(stderr, "Error in unlinking read semaphore: %s\n", strerror(errno));
-            }
-            sems->readSemaphore = NULL;
+#ifdef DEBUG
+            else
+                fprintf(stderr, "sem_close1 failed: %s", strerror(errno));
+#endif
         }
 
         if (sems->writeSemaphore != NULL) {
             /* close the write semaphore */
-            int semaphore_write_close = sem_close(sems->writeSemaphore);
-            if (semaphore_write_close == -1) {
-                fprintf(stderr, "Error in closing write semaphore, %s\n", strerror(errno));
+            if (sem_close(sems->writeSemaphore) == 0) {   //if either of those fails... well that's really too bad.
+                sem_unlink(sems->writeSemaphoreName);
+                sems->writeSemaphore = NULL;
             }
-
-
-            /* unlink the semaphore, if not done, error EEXIST */
-            int semaphore_write_unlink = sem_unlink(sems->writeSemaphoreName);
-            if (semaphore_write_unlink == -1) {
-                fprintf(stderr, "Error in unlinking write semaphore , %s\n", strerror(errno));
-            }
-            sems->writeSemaphore = NULL;
+#ifdef DEBUG
+            else
+                fprintf(stderr, "sem_close2 failed: %s", strerror(errno));
+#endif
         }
     }
 
     if (shared != NULL) {
+        if (shared->fileDescriptor != 0) {
+            do {
+                if (close(shared->fileDescriptor))
+                    shared->fileDescriptor = 0;
+            } while (shared->fileDescriptor != 0 && errno ==
+                                                    EINTR); //if the disk has trouble closing our file I assume nobody else will manage to read it either and if we managed to create a bogus filedescriptor that would be quite impressive!
+        }
+
+
         if (shared->sharedMemory != NULL) {
-            /* unmap the memory */
-            /* TODO: unmap fails every time, but the memory is deleted */
-            int unmapReturn = munmap(shared->sharedMemory, shared->size);
-            if (unmapReturn == ERROR) {
-                fprintf(stderr, "Error in unmapping memory, %s\n", strerror(errno));
-            }
+            //if either of those fails. Well. I'd be really sad.
+#ifdef DEBUG
+            fprintf(stderr, "clean up memory\n");
+#endif
+#ifndef DEBUG
+            munmap(shared->sharedMemory, shared->size);
+#else
+            if (munmap(shared->sharedMemory, shared->size) != 0)
+                fprintf(stderr, "munmap failed: %s\n", strerror(errno));
+#endif
 
-            /* close the memory file */
-            int closeMemory = close(shared->fileDescriptor);
-            if (closeMemory == ERROR) {
-                fprintf(stderr, "Error in closing memory file, %s\n", strerror(errno));
-            }
-
-            /* unlink the memory file from /dev/shm/ */
-            if (shm_unlink(shared->sharedMemoryName) == ERROR) {
-                fprintf(stderr, "Error in unlinking memory file, %s\n", strerror(errno));
-            }
+#ifndef DEBUG
+            shm_unlink(shared->sharedMemoryName);
+#else
+            if (shm_unlink(shared->sharedMemoryName) != 0)
+                fprintf(stderr, "shm_unlink failed: %s\n", strerror(errno));
+#endif
 
             shared->sharedMemory = NULL;
         }

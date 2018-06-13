@@ -15,22 +15,31 @@ static bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize
 int main(int argc, char* argv[]) {
     bool rc = true;
     semaphores sems = {.writeSemaphore = NULL, .readSemaphore = NULL};
-    sharedmem mem = {.sharedMemory = NULL};
+    sharedmem mem = {.sharedMemory = NULL, .fileDescriptor = 0};
     size_t buffersize;
 
     /* Parameters */
     rc = readParameters(argc, argv, &buffersize);
-
+#ifdef DEBUG
+    fprintf(stderr, "rc nach readParam: %i\n", rc);
+#endif
     /* Semaphores */
     rc = rc && getSemaphores(buffersize, &sems);
-
+#ifdef DEBUG
+    fprintf(stderr, "rc nach getSems: %i\n", rc);
+#endif
     /* Sharedmemory */
     rc = rc && getSharedMem(buffersize, &mem);
-
+#ifdef DEBUG
+    fprintf(stderr, "rc nach getShared: %i\n", rc);
+#endif
     /* read from stdin and write to shared memory */
     rc = rc && transcribe(&sems, &mem, buffersize);
+#ifdef DEBUG
+    fprintf(stderr, "rc nach transcribe: %i\n", rc);
+#endif
 
-    if(!rc){
+    if (!rc) {    //We only clean up if things went wrong. Otherwise its the receivers job.
         removeRessources(&sems, &mem);
         fprintf(stderr, "USAGE: %s [-m] length\n", argv[0]);
         return EXIT_FAILURE;
@@ -74,8 +83,7 @@ static bool readParameters(const int argc, char* const argv[], size_t* bufferSiz
         }
     }
 
-    //TODO: revisit. hardcoding the 29 is probably not the way to go
-    if ((argc != optind) || (errno == ERANGE) || (*bufferSize == 0) || (*bufferSize >> 29)) {
+    if ((argc != optind) || (errno == ERANGE) || (*bufferSize <= 0)) {
         rc = false;
     }
 

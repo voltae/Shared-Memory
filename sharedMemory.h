@@ -22,6 +22,8 @@
 #define NAMELLENGTH 14
 #define ERROR (-1)
 
+#define DEBUG
+
 typedef struct semaphores{
     sem_t* readSemaphore;
     sem_t* writeSemaphore;
