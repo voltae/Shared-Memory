@@ -2,16 +2,10 @@
 // Created by marcaurel on 11.05.18.
 //
 
-
 #include "sharedMemory.h"
 
 static bool readParameters(const int argc, char* const argv[], size_t* bufferSize);
-
 static bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize);
-
-/* Global constant for shared memory */
-// file descriptor for the shared memory (is stored on disk "/dev/shm")
-// the linked memory address in current address space
 
 int main(int argc, char* argv[]) {
     bool rc = true;
@@ -41,8 +35,8 @@ int main(int argc, char* argv[]) {
 
 static bool readParameters(const int argc, char* const argv[], size_t* bufferSize) {
     bool rc = true;
-    int opt;    // option for getop
-    int bOptionM = 0;   // Flag for the 'm' option
+    int option;
+    bool mFound = false;
     char* stringInt = NULL;
 
 
@@ -51,20 +45,23 @@ static bool readParameters(const int argc, char* const argv[], size_t* bufferSiz
     if (argc < 2)
         rc = false;
     else {
-        while (rc && (opt = getopt(argc, argv, "m:")) != -1) {
-            switch (opt) {
+        while (rc && (option = getopt(argc, argv, "m:")) != -1) {
+            switch (option) {
                 case 'm': {
-                    if (bOptionM) { //we do not allow a second "-m"
+                    if (!mFound) {
+                        mFound = true;
+                        *bufferSize = strtol(optarg, &stringInt, 10);
+                        //non numeric leftovers in the option string is a no-no and giving us a buffer size of 0 or less is just mean
+                        //We don't check for ERANGE and LONG_MIN because we already test for size < 0. LONG_MIN should satisfy that. Rough estimate.
+                        if ((strcmp(stringInt, "\0") != 0) || (*bufferSize <= 0) ||
+                            (*bufferSize == LONG_MAX && errno == ERANGE))
+                            rc = false;
+                    } else //we do not allow a second "-m"
                         rc = false;
-                        break;
-                    }
-                    bOptionM = 1;
-                    *bufferSize = strtol(optarg, &stringInt, 10);
-                    if (strcmp(stringInt, "\0") != 0)   //non numeric leftovers in the option string is a no-no
-                        rc = false;
+
                     break;
                 }
-                case '?':
+                case '?':   //other options than m are a no-no
                     rc = false;
                     break;
                 default:
@@ -74,7 +71,8 @@ static bool readParameters(const int argc, char* const argv[], size_t* bufferSiz
         }
     }
 
-    if ((argc != optind) || (errno == ERANGE) || (*bufferSize <= 0)) {
+    //don't want any other junk in my arguments.
+    if (argc != optind) {
         rc = false;
     }
 
@@ -89,19 +87,14 @@ bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize) {
     do {
         readingInt = fgetc(stdin);
 
-        // write index is the same as the read index. writer must wait
-        int semaphoreWait = sem_wait(sems->writeSemaphore);
-        if (semaphoreWait == ERROR)
+        if (sem_wait(sems->writeSemaphore) == ERROR)
             rc = false;
 
-        /* write a char to shared memory */
         mem->sharedMemory[sharedMemoryIndex] = readingInt;
 
-        int retval = sem_post(sems->readSemaphore);
-        if (retval == ERROR)
+        if (sem_post(sems->readSemaphore) == ERROR)
             rc = false;
 
-        // increment the counter
         sharedMemoryIndex = (sharedMemoryIndex + 1) % buffersize;
     } while (rc && readingInt != EOF);
 

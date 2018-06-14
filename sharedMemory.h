@@ -17,6 +17,7 @@
 #include <string.h>     // for strerror
 #include <assert.h>
 #include <stdbool.h>
+#include <values.h>
 
 
 #define NAMELLENGTH 14
