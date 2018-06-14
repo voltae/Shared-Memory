@@ -81,13 +81,20 @@ static bool readParameters(const int argc, char* const argv[], size_t* bufferSiz
 
 bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize) {
     bool rc = true;
+    int semWaitRC = 0;
     int readingInt;
     size_t sharedMemoryIndex = 0;
+
 
     do {
         readingInt = fgetc(stdin);
 
-        if (sem_wait(sems->writeSemaphore) == ERROR)
+        do {
+            semWaitRC = sem_wait(sems->writeSemaphore);
+        } while (semWaitRC == ERROR && errno == EINTR);
+
+        //last sem_wait call failed and errno is not EINTR
+        if (semWaitRC == ERROR)
             rc = false;
 
         mem->sharedMemory[sharedMemoryIndex] = readingInt;
