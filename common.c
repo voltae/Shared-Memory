@@ -45,7 +45,6 @@ bool getSharedMem(size_t size, sharedmem* shared) {
     int uid = getuid();  // This function is always successful according to the manpage
     snprintf(shared->sharedMemoryName, NAMELLENGTH, "/shm_%d", 1000 * uid + 0);
 
-    // initialize shared memory
     shared->fileDescriptor = shm_open(shared->sharedMemoryName, O_CREAT | O_EXCL | O_RDWR, S_IRWXU);
     if (shared->fileDescriptor == ERROR) {
         if (errno == EEXIST)    //This is fine, someone else created our shared memory for us. How nice!
@@ -55,17 +54,15 @@ bool getSharedMem(size_t size, sharedmem* shared) {
             ret = false;
         }
     } else {
-        // fixing the shared memory to a define size (coming from the agrv)
-        int returrnVal = ftruncate(shared->fileDescriptor, size * sizeof(int));
-        if (returrnVal == ERROR) {
+        if (ftruncate(shared->fileDescriptor, size * sizeof(int)) == ERROR)
             ret = false;
-        }
     }
 
-    //the shm needs to be mapped even if we ran into problems earlier or we won't have a pointer to free later.
-    shared->sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, shared->fileDescriptor, 0);
-    if (shared->sharedMemory == MAP_FAILED) {
-        ret = false;
+    //if we managed to create a file the shm needs to be mapped even if we ran into problems truncating it or we won't have a pointer to free later.
+    if (shared->fileDescriptor != ERROR) {
+        shared->sharedMemory = mmap(NULL, size * sizeof(int), protection, MAP_SHARED, shared->fileDescriptor, 0);
+        if (shared->sharedMemory == MAP_FAILED)
+            ret = false;
     }
 
     return ret;
@@ -75,7 +72,8 @@ void removeRessources(semaphores* sems, sharedmem* shared) {
     if (sems != NULL) {
         if (sems->readSemaphore != NULL) {
             /* close the read semaphore */
-            if (sem_close(sems->readSemaphore) == 0) {   //if either of those fails... well that's really too bad.
+            if (sem_close(sems->readSemaphore) == 0) {
+                //if either of those fails... well that's really too bad.
                 sem_unlink(sems->readSemaphoreName);
                 sems->readSemaphore = NULL;
             }
@@ -83,7 +81,8 @@ void removeRessources(semaphores* sems, sharedmem* shared) {
 
         if (sems->writeSemaphore != NULL) {
             /* close the write semaphore */
-            if (sem_close(sems->writeSemaphore) == 0) {   //if either of those fails... well that's really too bad.
+            if (sem_close(sems->writeSemaphore) == 0) {
+                //if either of those fails... well that's really too bad.
                 sem_unlink(sems->writeSemaphoreName);
                 sems->writeSemaphore = NULL;
             }
