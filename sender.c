@@ -6,6 +6,7 @@
 #include "sharedMemory.h"
 
 static bool readParameters(const int argc, char* const argv[], size_t* bufferSize);
+
 static bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize);
 
 /* Global constant for shared memory */
@@ -20,31 +21,21 @@ int main(int argc, char* argv[]) {
 
     /* Parameters */
     rc = readParameters(argc, argv, &buffersize);
-#ifdef DEBUG
-    fprintf(stderr, "rc nach readParam: %i\n", rc);
-#endif
+
     /* Semaphores */
     rc = rc && getSemaphores(buffersize, &sems);
-#ifdef DEBUG
-    fprintf(stderr, "rc nach getSems: %i\n", rc);
-#endif
+
     /* Sharedmemory */
     rc = rc && getSharedMem(buffersize, &mem);
-#ifdef DEBUG
-    fprintf(stderr, "rc nach getShared: %i\n", rc);
-#endif
+
     /* read from stdin and write to shared memory */
     rc = rc && transcribe(&sems, &mem, buffersize);
-#ifdef DEBUG
-    fprintf(stderr, "rc nach transcribe: %i\n", rc);
-#endif
 
     if (!rc) {    //We only clean up if things went wrong. Otherwise its the receivers job.
         removeRessources(&sems, &mem);
         fprintf(stderr, "USAGE: %s [-m] length\n", argv[0]);
         return EXIT_FAILURE;
-    }
-    else
+    } else
         return EXIT_SUCCESS;
 }
 
@@ -59,7 +50,7 @@ static bool readParameters(const int argc, char* const argv[], size_t* bufferSiz
     /* check if no paramters are given */
     if (argc < 2)
         rc = false;
-    else{
+    else {
         while (rc && (opt = getopt(argc, argv, "m:")) != -1) {
             switch (opt) {
                 case 'm': {
@@ -90,7 +81,7 @@ static bool readParameters(const int argc, char* const argv[], size_t* bufferSiz
     return rc;
 }
 
-bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize){
+bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize) {
     bool rc = true;
     int readingInt;
     size_t sharedMemoryIndex = 0;
