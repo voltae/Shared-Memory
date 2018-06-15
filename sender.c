@@ -1,16 +1,16 @@
 
-//*
-// @file sender.c
-//
-// Betriebssysteme - Beispiel 3
-// sender - records input form stdin an inputs it into a ringbuffer in shared memory
-//
-// @author Manuel Seifner	 <ic17b022@technikum-wien.at>
-// @author Oliver Safar		 <ic17b077@technikum-wien.at>
-// @date 2018/06/15
-//
-// @version 1.0
-
+/**
+ * @file sender.c
+ *
+ * Betriebssysteme - Beispiel 3
+ * sender - records input form stdin an inputs it into a ringbuffer in shared memory
+ *
+ * @author Manuel Seifner	 <ic17b022@technikum-wien.at>
+ * @author Oliver Safar		 <ic17b077@technikum-wien.at>
+ * @date 2018/06/15
+ *
+ * @version 1.0
+*/
 
 // -------------------------------------------------------------- includes --
 
