@@ -9,42 +9,37 @@
 * @version 1.6
 * @brief The receiver() process reads characters from a buffer, implemented as ringbuffer with user defined size
 * and print them to standard out.
-*  @param type integer of the requested size of memor. It will fail, igf the user exceeds the shared memory limit
-*  of the given machine.
-*  @param command -m informs the receiver that the following number is the size of the requested ringbuffer
-*  @return 0 in case the operation worked as expected, 1 with an usage message in all other cases.
+* @param type integer of the requested size of memory. It will fail, if the user exceeds the shared memory limit
+* of the given machine, error will be printed.
+* @param command -m informs the receiver that the following number is the size of the requested ringbuffer
+* @return 0 in case the operation worked as expected, 1 with an usage message in all other cases.
 */
 
-
+// -------------------------------------------------------------- includes --
 #include "sharedMemory.h"
 
-/*!
- * @brief Releases all ressources in error case and calls then print_usage function for error printing
- * @param progname const char application name i.e. argv[0] for the output
- * @param sems pointer to the semaphores, get send to removeRessource function
- * @param shared pointer to the shared memory, get send to removeRessources function
- */
+// --------------------------------------------------------------- defines --
+
+// -------------------------------------------------------------- typedefs --
+
+// --------------------------------------------------------------- globals --
+
+// ------------------------------------------------------------- functions --
 static void BailOut(const char* progname, semaphores* sems, sharedmem* shared);
-// file descriptor for the shared memory (is stored on disk "/dev/shm")
-// the linked memory address in current address space
+static bool checkCommand(int argc, char** argv, size_t *buffersize);
 
-/* Report Error and free resources */
 /*!
- * @brief Prints a usage message to standard error, to inform the user of the correct call.
- * @param progname application name i.e argv[0] get printed in first place
- */
-void print_usage(const char *progname) {
-    fprintf(stderr, "USAGE: %s [-m] length\n", progname);
-    exit(EXIT_FAILURE);
-}
-
-/* Report Error and free resources
+ * @brief Report Error and free resources
  * Since we are in the receiver process, we are responsable for removing all resources, even in the error case
+ * @param progname application name ie argv[0]
+ * @param sems lokal pointer to the allocated semaphores
+ * @param shared lokal pointer to the allocated shared memory
  */
-void BailOut(const char* progname, semaphores* sems, sharedmem* shared) {
+static void BailOut(const char* progname, semaphores* sems, sharedmem* shared) {
     {
         removeRessources(sems, shared);
-        print_usage(progname);
+        fprintf(stderr, "USAGE: %s [-m] length\n", progname);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -53,9 +48,9 @@ void BailOut(const char* progname, semaphores* sems, sharedmem* shared) {
  * @param argc number of incoming parameters from command line call
  * @param argv feeded in parameters from command line call
  * @param buffersize pointer of typ size_t (unsigned integer) stores the size of the requested ringbuffer
- * @return bool true in case check went ok, false in the other case.
+ * @return bool true in case check is ok, false in the other case.
  */
-bool checkCommand(int argc, char** argv, size_t *buffersize) {
+static bool checkCommand(int argc, char** argv, size_t *buffersize) {
     int opt;    // option for getop
     int bOptionM = 0;   // Flag for the 'm' option
     int bError = 0;     // Flag for Option Error
@@ -65,7 +60,7 @@ bool checkCommand(int argc, char** argv, size_t *buffersize) {
     if (argc < 2) {
         return false;
     }
-    // check operants with getopt(3)
+    // check operands with getopt(3)
     while ((opt = getopt(argc, argv, "m:")) != -1) {
         switch (opt) {
             case 'm':
@@ -123,11 +118,9 @@ int main(int argc, char** argv) {
 
     /* check if no parameters are given, in this case print error message and leave program */
     getRessources = checkCommand(argc, argv, &buffersize);
-    if (getRessources == false)
-        print_usage(argv[0]);
 
     /* trying to open the semaphore */
-    getRessources = getSemaphores(buffersize, &sems);
+    getRessources = getRessources && getSemaphores(buffersize, &sems);
 
     /* trying the shared memory */
     getRessources = getRessources && getSharedMem(buffersize, &mem);
@@ -167,3 +160,11 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
+// =================================================================== eof ==
+
+// Local Variables:
+// mode: c
+// c-mode: k&r
+// c-basic-offset: 8
+// indent-tabs-mode: t
+// End:
