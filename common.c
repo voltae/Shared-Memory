@@ -28,7 +28,9 @@ static bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaph
  * @brief creates the name for both semaphores and calls the allocating function
  * @param size type unsigned int, size of the requested shared memory
  * @param sems pointer to the semaphores struct
- * @return typ bool, true in case allocation-success, false on failure
+ * @retval boolean
+ * @return true in case allocation-success
+ * @return false on failure
  */
 bool getSemaphores(size_t size, semaphores* sems) {
     bool ret = true;
@@ -50,7 +52,9 @@ bool getSemaphores(size_t size, semaphores* sems) {
  * @param semaphoreName char, name of the semaphores either to create or open.
  * @param size type (size_t) unsigned integer, size of the buffer for the write semaphore
  * @param semaphore doublepointer to the semaphore
- * @return type bool, true in case semaphre exists, false if not.
+ * @retval boolean
+ * @return true in case semaphore exists
+ * @return false in case semaphore could not be allocated
  */
 bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaphore) {
     bool ret = true;
@@ -72,7 +76,9 @@ bool tryCreateSemaphores(char* semaphoreName, size_t size, sem_t** semaphore) {
  * it opens the memory from file if there is already a memory allocated by an other process
  * @param size type (size_t) unsigned integer, size of the requested buffer
  * @param shared pointer to the sharedmemory struct
- * @return type bool, true if requested memory exists, false if not.
+ * @retval boolean
+ * @return true if requested memory exists
+ * @return false if memory allocation fails
  */
 bool getSharedMem(size_t size, sharedmem* shared) {
     bool ret = true;

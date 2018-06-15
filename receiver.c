@@ -12,9 +12,10 @@
 * @param type integer of the requested size of memory. It will fail, if the user exceeds the shared memory limit
 * of the given machine, error will be printed.
 * @param command -m informs the receiver that the following number is the size of the requested ringbuffer
+* @retval integer
 * @return 0 in case the operation worked as expected, 1 with an usage message in all other cases.
 */
-/* MARKER */
+
 // -------------------------------------------------------------- includes --
 #include "sharedMemory.h"
 
@@ -48,7 +49,9 @@ static void BailOut(const char* progname, semaphores* sems, sharedmem* shared) {
  * @param argc number of incoming parameters from command line call
  * @param argv feeded in parameters from command line call
  * @param buffersize pointer of typ size_t (unsigned integer) stores the size of the requested ringbuffer
- * @return bool true in case check is ok, false in the other case.
+ * @retval boolean
+ * @return true in case check is ok
+ * @return false if check failed
  */
 static bool checkCommand(int argc, char** argv, size_t *buffersize) {
     int opt;    // option for getop
@@ -100,6 +103,7 @@ static bool checkCommand(int argc, char** argv, size_t *buffersize) {
  * as there are some chars to read.
  * @param argc feeded in number of arguments from command line calls
  * @param argv feeded in arguments from command line calls
+ * @retval integer
  * @return 0 in case function worked as expected
  */
 int main(int argc, char** argv) {
