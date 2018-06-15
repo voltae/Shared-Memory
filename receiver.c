@@ -14,7 +14,7 @@
 * @param command -m informs the receiver that the following number is the size of the requested ringbuffer
 * @return 0 in case the operation worked as expected, 1 with an usage message in all other cases.
 */
-
+/* MARKER */
 // -------------------------------------------------------------- includes --
 #include "sharedMemory.h"
 
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
     semaphores sems;
     sharedmem mem;
     bool isNotEOF = true;
-    bool getRessources;
+    bool getRessources = true;
 
     /* buffer size allocated, stackvariable */
     size_t buffersize = 0;
@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
     int readingInt = 0;
 
     /* check if no parameters are given, in this case print error message and leave program */
-    getRessources = checkCommand(argc, argv, &buffersize);
+    getRessources = getRessources && checkCommand(argc, argv, &buffersize);
 
     /* trying to open the semaphore */
     getRessources = getRessources && getSemaphores(buffersize, &sems);
