@@ -1,12 +1,41 @@
+
+//*
+// @file sender.c
 //
-// Created by marcaurel on 11.05.18.
+// Betriebssysteme - Beispiel 3
+// sender - records input form stdin an inputs it into a ringbuffer in shared memory
 //
+// @author Manuel Seifner	 <ic17b022@technikum-wien.at>
+// @author Oliver Safar		 <ic17b077@technikum-wien.at>
+// @date 2018/06/15
+//
+// @version 1.0
+*//
+    
+// -------------------------------------------------------------- includes --
 
 #include "sharedMemory.h"
+
+// --------------------------------------------------------------- defines --
+
+// -------------------------------------------------------------- typedefs --
+
+// --------------------------------------------------------------- globals --
+
+// ------------------------------------------------------------- functions --
 
 static bool readParameters(const int argc, char* const argv[], size_t* bufferSize);
 static bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize);
 
+/**
+ * \brief The sender() process reads input and saves it into a ring buffer in shared memory
+ *
+ * \param   argc       the number of arguments
+ * \param   argv[]     the arguments itselves (including the program name in argv[0])
+ *
+ * \return  EXIT_SUCCESS when program finishes without error
+ * \return  EXIT_FAILURE if an error occurs
+ */
 int main(int argc, char* argv[]) {
     bool rc = true;
     semaphores sems = {.writeSemaphore = NULL, .readSemaphore = NULL};
@@ -33,6 +62,17 @@ int main(int argc, char* argv[]) {
         return EXIT_SUCCESS;
 }
 
+/**
+ * \brief This function checks the input arguments.
+ *
+ * \param   argc       the number of arguments
+ * \param   argv[]     the arguments itselves (including the program name in argv[0])
+ * \param   bufferSize pointer of typ size_t storing the size of the requested ringbuffer
+ *
+ * \retval  rc boolean starting out true, is set to false when a check fails
+ * \return  true if parameters are good
+ * \return  false if wrong parameters were entered
+ */
 static bool readParameters(const int argc, char* const argv[], size_t* bufferSize) {
     bool rc = true;
     int option;
@@ -79,6 +119,18 @@ static bool readParameters(const int argc, char* const argv[], size_t* bufferSiz
     return rc;
 }
 
+/**
+ * \brief This function is responsible for writing to the ring buffer it keeps writing until the buffer is full or EOF is encountered.
+ * \brief If the buffer is full it waits until the reciever starts reading on the other end.
+ *
+ * \param   *sems       pointer to the semaphoes to keep track of how much space is used in the ring buffer
+ * \param   *mem        pointer to the shared memory that contains the ring buffer
+ * \param   bufferSize  size of the requested ringbuffer
+ *
+ * \retval  rc boolean starting out true, is set to false if an error occurs during the transcribe process
+ * \return  true if EOF was reached without an error
+ * \return  false if an error occured
+ */
 bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize) {
     bool rc = true;
     int semWaitRC = 0;
@@ -107,3 +159,11 @@ bool transcribe(semaphores* sems, sharedmem* mem, const size_t buffersize) {
 
     return rc;
 }
+// =================================================================== eof ==
+
+// Local Variables:
+// mode: c
+// c-mode: k&r
+// c-basic-offset: 8
+// indent-tabs-mode: t
+// End:
