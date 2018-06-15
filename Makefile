@@ -10,6 +10,7 @@ LDLIBS = -lpthread -lrt
 OBJECTS_RECEIVER=receiver.o
 OBJECTS_SENDER=sender.o
 OBJECTS_COMMON=common.o
+EXECUTABLES=receiver sender
 HEADER=sharedMemory.h
 
 #get machines name
@@ -38,7 +39,7 @@ ID = $(shell id -g)
 	$(CC) $(CFLAGS)  -c $<
 
 
-all: receiver sender
+all: $(EXECUTABLES)
 
 receiver: $(OBJECTS_RECEIVER) $(OBJECTS_COMMON)
 	$(CC) $(CFLAGS) $(OBJECTS_RECEIVER) $(OBJECTS_COMMON) $(HEADER) -o$@ $(LDLIBS)
@@ -53,7 +54,7 @@ runtest: receiver sender
 # remove the object files
 .PHONY: clean
 clean:
-	rm -f *.o
+	$(RM) -f *.o $(EXECUTABLES)
 
 .PHONY: deleteResources
 #delete the semaphores and shared memory from /dev/shm/ with the naming from the description
