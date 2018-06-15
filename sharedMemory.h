@@ -34,19 +34,19 @@
  * @struct semaphores stores the references of the semaphores
  */
 typedef struct semaphores{
-    sem_t* readSemaphore;           /*! pointer to the read semaphore */
-    sem_t* writeSemaphore;          /*! pointer to the write semaphore */
-    char readSemaphoreName[NAMELLENGTH];    /*! char stores the name of the read semaphore */
-    char writeSemaphoreName[NAMELLENGTH];   /*! char stores the name of the write semaphore */
+    sem_t* readSemaphore;           /*!< pointer to the read semaphore */
+    sem_t* writeSemaphore;          /*!< pointer to the write semaphore */
+    char readSemaphoreName[NAMELLENGTH];    /*!< char stores the name of the read semaphore */
+    char writeSemaphoreName[NAMELLENGTH];   /*!< char stores the name of the write semaphore */
 } semaphores;
 /*!
  * @struct sharedmem stores the reference to the shared memory
  */
 typedef struct sharedmem {
-    int fileDescriptor;     /*! file descriptor of the shared memory */
-    int* sharedMemory;      /*! int pointer to the actual shared memory */
-    char sharedMemoryName[NAMELLENGTH];     /*! char stores the name of the shared memory */
-    size_t size;            /*! unsigned int stores the size of the shared memory */
+    int fileDescriptor;     /*!< file descriptor of the shared memory */
+    int* sharedMemory;      /*!< int pointer to the actual shared memory */
+    char sharedMemoryName[NAMELLENGTH];     /*!< char stores the name of the shared memory */
+    size_t size;            /*!< unsigned int stores the size of the shared memory */
 } sharedmem;
 
 /*!
