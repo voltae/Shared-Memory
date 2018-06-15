@@ -1,7 +1,8 @@
-# Valentin Platzgummer - ic17b06@technikum-wien.at
-# Lara Kammerer - ic17b001technikum-wien.at
-# Makefile - Shared memory
-# Date 11.05.2018
+#\file Makefile
+#\author Valentin Platzgummer - ic17b06@technikum-wien.at
+#\author Lara Kammerer - ic17b001technikum-wien.at
+#\brief Makefile - Shared memory
+#\date 2018-06-11
 
 # Define the required macros
 CFLAGS=-Wall -Werror -Wextra -Wstrict-prototypes -Wformat=2 -pedantic -fno-common -ftrapv -O3 -g -std=gnu11

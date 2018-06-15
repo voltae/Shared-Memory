@@ -1,7 +1,7 @@
 /*!
 * @file receiver.c
 * Operation systems shared memory sender/receiver functionality
-* assigment 3
+* assignment 3
 *
 * @author Valentin Platzgummer <ic17b096@technikum-wien.at>
 * @author Lara Kammerer <ic17b001@technikum-wien.at>
@@ -32,8 +32,8 @@ static bool checkCommand(int argc, char** argv, size_t *buffersize);
  * @brief Report Error and free resources
  * Since we are in the receiver process, we are responsable for removing all resources, even in the error case
  * @param progname application name ie argv[0]
- * @param sems lokal pointer to the allocated semaphores
- * @param shared lokal pointer to the allocated shared memory
+ * @param sems local pointer to the allocated semaphores
+ * @param shared local pointer to the allocated shared memory
  */
 static void BailOut(const char* progname, semaphores* sems, sharedmem* shared) {
     {
