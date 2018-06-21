@@ -12,8 +12,8 @@
 //
 //
 
-// global for child process to access it in both functions
-// global for the pointer to the pipe
+// global for child process to access it in both functions //wo gehört das hin?------------------------------------------------------------------------------------------------------
+// global for the pointer to the pipe //und das?------------------------------------------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------- includes --
 #include "datah.h"
 
@@ -65,6 +65,7 @@ static void sharedRemove(shared_t *sharedData);
  */
 long sharedSize(int argc, char *argv[])
 {
+	//check in der fkt zum übernehmen der size..find ich nett..übersichtlich-----------------------------------------------------------------------------------------------------
   int opt;
   long size = -1;
   char *notconv = "";
@@ -76,13 +77,14 @@ long sharedSize(int argc, char *argv[])
     return -1;
   }
 
-  while ((opt = getopt(argc, argv, "m:")) != -1)
+  while ((opt = getopt(argc, argv, "m:")) != -1) //zuweisung und Bedingung in einem----------------------------------------------------------------------------------------------
   {
     if (opt == 'm')
     {
       errno = 0;
-      size = strtol(optarg, &notconv, 10);
-      if (errno != 0 || *notconv != '\0' || size < 1)
+      size = strtol(optarg, &notconv, 10); //wofür das notconv? reicht nicht NULL?-------------------------------------------------------------------------------------------------
+      if (errno != 0 || *notconv != '\0' || size < 1) //hmm also notconv wird von strtol mögleicherweise bearbeitet?---------------------------------------------------------------
+										//sie checken nicht welcher error es ist..ist aber womöglich auch egal?--------------------------------------------------------------------
       {
         fprintf(stderr, "Usage: %s: -m <buffer_size>\nInvalid argument!\n", programName);
         return -1;
