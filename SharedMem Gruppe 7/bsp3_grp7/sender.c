@@ -24,13 +24,15 @@
  * @returns EXIT_SUCCESS, EXIT_FAILURE
  *
  */
+
+//snder und empfänger sehr kompakt gehalten..anschaulich, übersichtlich------------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
     long shmSize;
 
-    if ((shmSize = sharedSize(argc, argv)) == -1)
+    if ((shmSize = sharedSize(argc, argv)) == -1) //Zuweisung und Bedingung in einem---------------------------------------------------------------------------------------check sharedSize
     {
-        fprintf(stderr, "Usage: %s -m <buffer_size>\n", argv[0]);
+        fprintf(stderr, "Usage: %s -m <buffer_size>\n", argv[0]); //errorausgabe in stderr?-------------------------------------------------------------------------------------------
         return EXIT_FAILURE;
     }
 

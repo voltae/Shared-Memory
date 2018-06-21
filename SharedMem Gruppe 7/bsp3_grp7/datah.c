@@ -115,6 +115,8 @@ long sharedSize(int argc, char *argv[])
  * @returns 0, -1 in case of error
  *
  */
+
+// gut ab hier musst du dir das mal genau anschaun..keine ahnung was die da genau machen bzw dauerts jtz zu lang mich da reinzulesen was sie wieso machen+++++++++++++++++++++++++++++++++++++
 int sharedSend(long size, FILE *stream)
 {
   shared_t sharedData;
